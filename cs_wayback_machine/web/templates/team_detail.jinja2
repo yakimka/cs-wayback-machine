@@ -1,0 +1,10 @@
+<div>
+    {% for roster in data %}
+        <div style="border: 1px solid black; width: 300px; display: inline-block;">
+        <p style="color: red;">{{ roster.active_period.start }} - {{ roster.active_period.end }}</p>
+        {% for player in roster.players %}
+            <p>{{ player.nickname }} ({{ player.active_period.start }} - {{ player.active_period.end }})</p>
+        {% endfor %}
+        </div>
+    {% endfor %}
+</div>
