@@ -14,6 +14,8 @@ services:
   devtools:
     <<: *common
     command: sleep infinity
+    ports:
+      - "8000:8000"
 
   app:
     <<: *common
