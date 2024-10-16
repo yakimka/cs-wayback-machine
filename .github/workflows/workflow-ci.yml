@@ -20,6 +20,7 @@ env:
   COMPOSE_DOCKER_CLI_BUILD: "1"
 
   PROJECT_NAME: "cs-wayback-machine"
+  MODULE_NAME: "cs_wayback_machine"
   REGISTRY: "docker.io"
   REGISTRY_USERNAME: "yakimka"
   REGISTRY_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -189,7 +190,7 @@ jobs:
       - name: Build image
         run: >
           docker buildx build ${PUSH_FLAG:-}
-          --build-arg WHEEL=${PROJECT_NAME}-${PROJECT_VERSION}-py3-none-any.whl
+          --build-arg WHEEL=${MODULE_NAME}-${PROJECT_VERSION}-py3-none-any.whl
           --cache-to type=gha,mode=max,scope=$GITHUB_REF_NAME
           --cache-from type=gha,scope=$GITHUB_REF_NAME
           --platform=linux/arm64,linux/amd64
