@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import os
 from datetime import date
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -46,7 +47,10 @@ middleware = [
     Middleware(ClosingSlashMiddleware),
 ]
 
-duckdb_conn = load_duck_db_database(CURRENT_DIR / "../rosters.jsonlines")
+parser_result_file = Path(
+    os.getenv("PARSER_RESULT_FILE", CURRENT_DIR / "../rosters.jsonlines")
+)
+duckdb_conn = load_duck_db_database(parser_result_file)
 
 
 def team_detail_view(request: Request) -> Response:
