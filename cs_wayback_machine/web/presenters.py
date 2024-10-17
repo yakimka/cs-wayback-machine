@@ -47,7 +47,7 @@ class TeamRostersPresenter:
 
     def present(self, team_id: str) -> TeamRostersDTO:
         players = self._rosters_storage.get_players(
-            team_full_name=team_id,
+            team_id=team_id,
             date_from=date(2000, 1, 1),
             date_to=date(2023, 12, 31),
         )
@@ -58,7 +58,10 @@ class TeamRostersPresenter:
         result = []
         for roster in rosters:
             players = []
+            game_version: str | None = None
             for player in roster.players:
+                if game_version is None and player.game_version:
+                    game_version = player.game_version
                 positions = []
                 if player.is_captain:
                     positions.append("Captain")
@@ -83,7 +86,7 @@ class TeamRostersPresenter:
             period_end = _format_date(roster.active_period.end)
             result.append(
                 RosterDTO(
-                    game_version="CS:GO",
+                    game_version=_format_game_version(game_version),
                     players=players,
                     period=f"{period_start} - {period_end}",
                 )
@@ -96,3 +99,19 @@ def _format_date(val: date | None) -> str:
     if not val:
         return "-"
     return val.strftime("%-d %b %Y")
+
+
+def _format_game_version(val: str | None) -> str:
+    if not val:
+        return "-"
+    val = val.strip()
+    val_lower = val.lower()
+    if "global" in val_lower:
+        return "CS:GO"
+    if "source" in val_lower:
+        return "CS:S"
+    if val_lower == "cs":
+        return "CS 1.6"
+    if "2" in val_lower:
+        return "CS2"
+    return val
