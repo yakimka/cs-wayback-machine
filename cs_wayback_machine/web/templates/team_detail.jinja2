@@ -8,10 +8,10 @@
                 {% for player in roster.players %}
                     <details>
                         <summary>
-                            <img src="/img/c/be.svg"
-                                 alt="Germany"
+                            <img src="/img/f/{{ player.flag_name.replace(" ", "_") }}.svg"
+                                 alt="{{ player.flag_name }}"
                                  width="25px"
-                                 title="Germany"
+                                 title="{{ player.flag_name }}"
                                  style="border: 1px solid white;">
                             <a href="{{ player.liquipedia_url }}">{{ player.nickname }}</a>
                             {% if player.is_captain %}
