@@ -1,29 +1,17 @@
 from __future__ import annotations
 
 import contextlib
-import os
-from datetime import date
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import picodi
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
-from starlette.responses import HTMLResponse, Response
-from starlette.routing import Mount, Route
-from starlette.staticfiles import StaticFiles
 
-from cs_wayback_machine.roster import create_rosters
-from cs_wayback_machine.storage import RosterStorage, load_duck_db_database
-from cs_wayback_machine.web.html_render import render_html
 from cs_wayback_machine.web.middleware import ClosingSlashMiddleware
+from cs_wayback_machine.web.routes import routes
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
-
-    from starlette.requests import Request
-
-CURRENT_DIR = Path(__file__).parent
 
 
 @contextlib.asynccontextmanager
@@ -39,33 +27,8 @@ middleware = [
     Middleware(ClosingSlashMiddleware),
 ]
 
-parser_result_file = Path(
-    os.getenv("PARSER_RESULT_FILE", CURRENT_DIR / "../rosters.jsonlines")
-)
-duckdb_conn = load_duck_db_database(parser_result_file)
-
-
-def team_detail_view(request: Request) -> Response:
-    team_id = request.path_params["team_id"]
-    storage = RosterStorage(duckdb_conn)
-    players = storage.get_players(
-        team_full_name=team_id, date_from=date(2000, 1, 1), date_to=date(2023, 12, 31)
-    )
-    rosters = create_rosters(players)
-    html = render_html("team_detail.jinja2", rosters)
-
-    return HTMLResponse(html)
-
-
 app = Starlette(
-    routes=[
-        Route("/teams/{team_id}/", team_detail_view, methods=["get"]),
-        Mount(
-            "/",
-            app=StaticFiles(directory=CURRENT_DIR / "public"),
-            name="static",
-        ),
-    ],
+    routes=routes,
     middleware=middleware,
     lifespan=lifespan,
 )
