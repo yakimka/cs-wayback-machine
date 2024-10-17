@@ -19,8 +19,9 @@ class RosterStorage:
         self, team_full_name: str, date_from: date, date_to: date
     ) -> list[RosterPlayer]:
         query = """
-        SELECT team_full_name, player_id, name, liquipedia_url, is_captain,
-            is_coach, flag_name, flag_url, join_date, inactive_date, leave_date
+        SELECT team_full_name, game_version, player_id, name, liquipedia_url,
+            is_captain, is_coach, flag_name, flag_url, join_date, inactive_date,
+            leave_date
         FROM rosters
         WHERE team_full_name = $team_full_name
         AND join_date IS NOT NULL  -- TODO delete this line
@@ -58,6 +59,7 @@ def load_duck_db_database(parsed_rosters: Path) -> duckdb.DuckDBPyConnection:
         """
         CREATE TABLE rosters (
             team_full_name TEXT REFERENCES teams(full_name),
+            game_version TEXT,
             player_id TEXT NOT NULL,
             player_full_id TEXT,
             name TEXT,
@@ -84,11 +86,12 @@ def load_duck_db_database(parsed_rosters: Path) -> duckdb.DuckDBPyConnection:
     conn.execute(
         """
     INSERT INTO rosters (
-        team_full_name, player_id, player_full_id, name, liquipedia_url, is_captain,
-        is_coach, flag_name, flag_url, join_date, inactive_date, leave_date
+        team_full_name, game_version, player_id, player_full_id, name, liquipedia_url,
+        is_captain, is_coach, flag_name, flag_url, join_date, inactive_date, leave_date
     )
-    SELECT team_full_name, player_id, player_full_id, full_name, player_url, is_captain,
-    is_coach, flag_name, flag_url, join_date, inactive_date, leave_date
+    SELECT team_full_name, game_version, player_id, player_full_id, full_name,
+        player_url, is_captain, is_coach, flag_name, flag_url, join_date, inactive_date,
+        leave_date
     FROM rosters_rel
     WHERE join_date IS NOT NULL -- TODO delete this line
     """

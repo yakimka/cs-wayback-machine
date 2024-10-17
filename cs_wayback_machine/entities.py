@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 @dataclass(frozen=True)
 class RosterPlayer:
     team_id: str
+    game_version: str
     nickname: str
     name: str
     liquipedia_url: str | None

@@ -24,23 +24,8 @@ body > header .dropdown summary {
     border: none;
     outline: none;
 }
+
 /*end theme switcher*/
-
-.book-cover {
-    border: 1px solid var(--pico-contrast);
-    border-radius: var(--pico-border-radius);
-}
-
-.action-link {
-    color: var(--pico-secondary);
-    text-decoration: underline dotted;
-    cursor: pointer;
-    margin: 0 2px;
-}
-
-.action-link:hover {
-    color: var(--pico-secondary-hover);
-}
 
 .htmx-indicator {
     display: none;
@@ -113,4 +98,13 @@ body > header .dropdown summary {
         font-size: 0.875rem;
     }
 }
+
 /*end pagination*/
+
+.roster-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: max-content;
+    grid-column-gap: var(--pico-grid-column-gap);
+    grid-row-gap: var(--pico-grid-row-gap);
+}
