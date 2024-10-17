@@ -17,7 +17,7 @@ class RosterPlayer:
     name: str
     liquipedia_url: str | None
     is_captain: bool
-    is_coach: bool
+    position: str | None
     flag_name: str | None
     flag_url: str | None
     join_date: date

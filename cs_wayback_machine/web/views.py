@@ -21,7 +21,7 @@ def team_detail_view(
     request: Request, rosters_storage: RosterStorage = Provide(get_rosters_storage)
 ) -> Response:
     team_id = slugify.reverse(request.path_params["team_id"])
-    presenter = TeamRostersPresenter(grid_size=4, rosters_storage=rosters_storage)
+    presenter = TeamRostersPresenter(rosters_storage=rosters_storage)
     result = presenter.present(team_id)
     if result is None:
         return HTMLResponse(content=render_404(), status_code=404)

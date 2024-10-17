@@ -41,8 +41,8 @@ class TeamRostersDTO:
 
 
 class TeamRostersPresenter:
-    def __init__(self, *, grid_size: int, rosters_storage: RosterStorage):
-        self._grid_size = grid_size
+    def __init__(self, *, rosters_storage: RosterStorage):
+        self._skip_if_period_less_than = 7
         self._rosters_storage = rosters_storage
 
     def present(self, team_id: str) -> TeamRostersDTO | None:
@@ -68,16 +68,19 @@ class TeamRostersPresenter:
                 if game_version is None and player.game_version:
                     game_version = player.game_version
                 positions = []
+                position_field = (player.position or "").lower()
                 if player.is_captain:
                     positions.append("Captain")
-                elif player.is_coach:
+                if "coach" in position_field:
                     positions.append("Coach")
+                if "loan" in position_field:
+                    positions.append("Loan")
                 players.append(
                     PlayerDTO(
                         nickname=player.nickname,
                         name=player.name,
                         is_captain=player.is_captain,
-                        is_coach=player.is_coach,
+                        is_coach="Coach" in positions,
                         liquipedia_url=player.liquipedia_url,
                         flag_url=f"/img/f/{slugify(player.flag_name or "")}.svg",
                         country=player.flag_name or "-",
@@ -87,13 +90,15 @@ class TeamRostersPresenter:
                         leave_date=_format_date(player.leave_date),
                     )
                 )
-            period_start = _format_date(roster.active_period.start)
-            period_end = _format_date(roster.active_period.end)
+            period_start = roster.active_period.start
+            period_end = roster.active_period.end
+            if (period_end - period_start).days < self._skip_if_period_less_than:
+                continue
             result.append(
                 RosterDTO(
                     game_version=_format_game_version(game_version),
-                    players=players,
-                    period=f"{period_start} - {period_end}",
+                    players=sorted(players, key=lambda x: x.nickname),
+                    period=f"{_format_date(period_start)} - {_format_date(period_end)}",
                 )
             )
 
