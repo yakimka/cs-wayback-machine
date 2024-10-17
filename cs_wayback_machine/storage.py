@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import duckdb
 
-from cs_wayback_machine.entities import RosterPlayer
+from cs_wayback_machine.entities import RosterPlayer, Team
 
 if TYPE_CHECKING:
     from datetime import date
@@ -14,6 +14,18 @@ if TYPE_CHECKING:
 class RosterStorage:
     def __init__(self, conn: duckdb.DuckDBPyConnection) -> None:
         self._conn = conn
+
+    def get_team(self, team_id: str) -> Team | None:
+        query = """
+        SELECT name, full_name, liquipedia_url
+        FROM teams
+        WHERE full_name = $team_id;
+        """
+        statement = self._conn.execute(query, parameters={"team_id": team_id})
+        row = statement.fetchone()
+        if row is None:
+            return None
+        return Team(*row)
 
     def get_players(
         self, team_id: str, date_from: date, date_to: date

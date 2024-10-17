@@ -36,3 +36,10 @@ class RosterPlayer:
 class Roster:
     players: list[RosterPlayer]
     active_period: DateRange
+
+
+@dataclass
+class Team:
+    name: str
+    full_name: str
+    liquipedia_url: str

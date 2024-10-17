@@ -46,6 +46,9 @@ class TeamRostersPresenter:
         self._rosters_storage = rosters_storage
 
     def present(self, team_id: str) -> TeamRostersDTO | None:
+        team = self._rosters_storage.get_team(team_id)
+        if team is None:
+            return None
         players = self._rosters_storage.get_players(
             team_id=team_id,
             date_from=date(2000, 1, 1),
@@ -54,7 +57,7 @@ class TeamRostersPresenter:
         if not players:
             return None
         rosters = self._prepare_rosters(create_rosters(players))
-        return TeamRostersDTO(team_name=team_id, rosters=rosters)
+        return TeamRostersDTO(team_name=team.name, rosters=rosters)
 
     def _prepare_rosters(self, rosters: list[Roster]) -> list[RosterDTO]:
         result = []

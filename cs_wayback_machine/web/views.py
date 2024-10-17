@@ -8,6 +8,7 @@ from starlette.responses import HTMLResponse, Response
 from cs_wayback_machine.web.deps import get_rosters_storage
 from cs_wayback_machine.web.html_render import render_404, render_html
 from cs_wayback_machine.web.presenters import TeamRostersPresenter
+from cs_wayback_machine.web.slugify import slugify
 
 if TYPE_CHECKING:
     from starlette.requests import Request
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
 def team_detail_view(
     request: Request, rosters_storage: RosterStorage = Provide(get_rosters_storage)
 ) -> Response:
-    team_id = request.path_params["team_id"]
+    team_id = slugify.reverse(request.path_params["team_id"])
     presenter = TeamRostersPresenter(grid_size=4, rosters_storage=rosters_storage)
     result = presenter.present(team_id)
     if result is None:
