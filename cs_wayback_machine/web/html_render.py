@@ -9,5 +9,9 @@ jinja_env = Environment(
 )
 
 
-def render_html(template_name: str, data: Any) -> str:
+def render_html(template_name: str, data: Any = None) -> str:
     return jinja_env.get_template(template_name).render(data=data)
+
+
+def render_404() -> str:
+    return render_html("404_not_found.jinja2")

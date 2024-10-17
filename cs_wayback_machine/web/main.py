@@ -9,6 +9,7 @@ from starlette.middleware import Middleware
 
 from cs_wayback_machine.web.middleware import ClosingSlashMiddleware
 from cs_wayback_machine.web.routes import routes
+from cs_wayback_machine.web.views import not_found_view, server_error_view
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -27,10 +28,16 @@ middleware = [
     Middleware(ClosingSlashMiddleware),
 ]
 
+exception_handlers = {
+    404: not_found_view,
+    500: server_error_view,
+}
+
 app = Starlette(
     routes=routes,
     middleware=middleware,
     lifespan=lifespan,
+    exception_handlers=exception_handlers,
 )
 
 

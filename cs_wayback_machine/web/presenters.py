@@ -45,12 +45,14 @@ class TeamRostersPresenter:
         self._grid_size = grid_size
         self._rosters_storage = rosters_storage
 
-    def present(self, team_id: str) -> TeamRostersDTO:
+    def present(self, team_id: str) -> TeamRostersDTO | None:
         players = self._rosters_storage.get_players(
             team_id=team_id,
             date_from=date(2000, 1, 1),
             date_to=date(2023, 12, 31),
         )
+        if not players:
+            return None
         rosters = self._prepare_rosters(create_rosters(players))
         return TeamRostersDTO(team_name=team_id, rosters=rosters)
 
