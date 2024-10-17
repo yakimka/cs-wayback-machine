@@ -1,10 +1,45 @@
-<div>
-    {% for roster in data %}
-        <div style="border: 1px solid black; width: 300px; display: inline-block;">
-        <p style="color: red;">{{ roster.active_period.start }} - {{ roster.active_period.end }}</p>
-        {% for player in roster.players %}
-            <p>{{ player.nickname }} ({{ player.active_period.start }} - {{ player.active_period.end }})</p>
+{% extends "base.jinja2" %}
+{% block body %}
+    <main class="container">
+        <h1>Natus Vincere</h1>
+        {% for roster in data %}
+            <article>
+                <header>{{ roster.active_period.start }} - {{ roster.active_period.end }}</header>
+                {% for player in roster.players %}
+                    <details>
+                        <summary>
+                            <img src="/img/c/be.svg"
+                                 alt="Germany"
+                                 width="25px"
+                                 title="Germany"
+                                 style="border: 1px solid white;">
+                            <a href="{{ player.liquipedia_url }}">{{ player.nickname }}</a>
+                            {% if player.is_captain %}
+                                <img src="/img/crown.png"
+                                     alt="IGL"
+                                     width="25px"
+                                     title="In Game Leader">
+                            {% endif %}
+                            {% if player.is_coach %}
+                                <img src="/img/whistle.png"
+                                     alt="Coach"
+                                     width="25px"
+                                     title="Coach">
+                            {% endif %}
+                        </summary>
+                        <div>
+                            <p><small>Name: {{ player.name }}</small></p>
+                            <p><small>Country: {{ player.flag_name }}</small></p>
+                            <p><small>Position: -</small></p>
+                            <p><small>Join Date: {{ player.join_date }}</small></p>
+                            <p><small>Inactive Date: {{ player.inactive_date }}</small></p>
+                            <p><small>Leave Date: {{ player.leave_date }}</small></p>
+                        </div>
+                    </details>
+                    <hr>
+                {% endfor %}
+                <footer>Counter Strike Source</footer>
+            </article>
         {% endfor %}
-        </div>
-    {% endfor %}
-</div>
+    </main>
+{% endblock %}

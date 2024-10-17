@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 class RosterPlayer:
     team_id: str
     nickname: str
+    name: str
     liquipedia_url: str | None
     is_captain: bool
     is_coach: bool

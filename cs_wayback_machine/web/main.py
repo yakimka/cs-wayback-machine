@@ -10,7 +10,8 @@ import picodi
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.responses import HTMLResponse, Response
-from starlette.routing import Route
+from starlette.routing import Mount, Route
+from starlette.staticfiles import StaticFiles
 
 from cs_wayback_machine.roster import create_rosters
 from cs_wayback_machine.storage import RosterStorage, load_duck_db_database
@@ -59,6 +60,11 @@ def team_detail_view(request: Request) -> Response:
 app = Starlette(
     routes=[
         Route("/teams/{team_id}/", team_detail_view, methods=["get"]),
+        Mount(
+            "/",
+            app=StaticFiles(directory=CURRENT_DIR / "public"),
+            name="static",
+        ),
     ],
     middleware=middleware,
     lifespan=lifespan,

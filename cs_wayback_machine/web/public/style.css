@@ -1,0 +1,116 @@
+body > header {
+    background-color: var(--pico-background-color);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+body > header hr {
+    margin: 0;
+}
+
+/*theme switcher*/
+body > header svg {
+    width: 1rem;
+    height: 1rem;
+    color: var(--pico-contrast);
+}
+
+#theme_switcher {
+    vertical-align: super;
+}
+
+body > header .dropdown summary {
+    border: none;
+    outline: none;
+}
+/*end theme switcher*/
+
+.book-cover {
+    border: 1px solid var(--pico-contrast);
+    border-radius: var(--pico-border-radius);
+}
+
+.action-link {
+    color: var(--pico-secondary);
+    text-decoration: underline dotted;
+    cursor: pointer;
+    margin: 0 2px;
+}
+
+.action-link:hover {
+    color: var(--pico-secondary-hover);
+}
+
+.htmx-indicator {
+    display: none;
+}
+
+.htmx-request .htmx-indicator {
+    display: inline;
+}
+
+.htmx-request.htmx-indicator {
+    display: inline;
+}
+
+/*pagination*/
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    list-style: none;
+    padding: 0;
+    margin: var(--pico-spacing) 0;
+}
+
+.pagination a,
+.pagination span {
+    padding: calc(var(--pico-spacing) / 2) var(--pico-spacing);
+    margin: 0 calc(var(--pico-spacing) / 4);
+    border: var(--pico-border-width) solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    text-decoration: none;
+    color: var(--pico-primary);
+    transition: background-color var(--pico-transition), color var(--pico-transition);
+}
+
+.pagination span {
+    background-color: var(--pico-primary-background);
+    border-color: var(--pico-primary-border);
+    color: var(--pico-primary-inverse);
+}
+
+.pagination a:hover {
+    background-color: var(--pico-primary-hover-background);
+    color: var(--pico-primary-inverse);
+}
+
+.pagination a:focus,
+.pagination a:active {
+    outline: none;
+    background-color: var(--pico-primary-focus);
+    color: var(--pico-primary-inverse);
+}
+
+@media (max-width: 768px) {
+    .pagination a,
+    .pagination span {
+        padding: calc(var(--pico-spacing) / 3) calc(var(--pico-spacing) / 2);
+        margin: 0 calc(var(--pico-spacing) / 8);
+    }
+}
+
+@media (max-width: 576px) {
+    .pagination {
+        flex-wrap: wrap;
+    }
+
+    .pagination a,
+    .pagination span {
+        padding: calc(var(--pico-spacing) / 3) calc(var(--pico-spacing) / 3);
+        margin: calc(var(--pico-spacing) / 16) calc(var(--pico-spacing) / 8);
+        font-size: 0.875rem;
+    }
+}
+/*end pagination*/

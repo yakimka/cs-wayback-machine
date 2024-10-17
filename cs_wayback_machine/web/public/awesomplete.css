@@ -1,0 +1,44 @@
+.awesomplete [hidden] {
+    display: none;
+}
+.awesomplete .visually-hidden {
+    position: absolute;
+    clip: rect(0, 0, 0, 0);
+}
+.awesomplete > ul:empty {
+    display: none;
+}
+
+.awesomplete {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+.awesomplete ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: var(--pico-background-color);
+    border: 1px solid var(--pico-dropdown-border-color);
+    border-radius: 0.5rem;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    z-index: 100;
+}
+
+.awesomplete li {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.awesomplete li[aria-selected="true"] {
+    background-color: var(--pico-secondary-background);
+    color: var(--pico-secondary-inverse);
+}
