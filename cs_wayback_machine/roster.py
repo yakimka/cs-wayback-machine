@@ -49,7 +49,8 @@ def create_rosters(players: list[RosterPlayer]) -> list[Roster]:
                     start=current_period_start, end=roster_period_end
                 )
                 roster = Roster(
-                    players=list(previous_active_players), active_period=roster_period
+                    players=list(previous_active_players),
+                    active_period=roster_period,
                 )
                 rosters.append(roster)
             current_period_start = event_date

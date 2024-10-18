@@ -1,10 +1,67 @@
-<div>
-    {% for roster in data %}
-        <div style="border: 1px solid black; width: 300px; display: inline-block;">
-        <p style="color: red;">{{ roster.active_period.start }} - {{ roster.active_period.end }}</p>
-        {% for player in roster.players %}
-            <p>{{ player.nickname }} ({{ player.active_period.start }} - {{ player.active_period.end }})</p>
-        {% endfor %}
+{% extends "base.jinja2" %}
+{% block body %}
+    <main class="container">
+    <div role="group">
+        <h1>{{ data.team_name }} <sup><a class="secondary extra-small" href="{{ data.liquipedia_url }}">liquipedia</a></sup></h1>
+    </div>
+        <div class="roster-grid">
+            {% for roster in data.rosters %}
+                <article>
+                    <header>
+                        <hgroup style="margin-bottom: 0;">
+                          <p>{{ roster.period }}</p>
+                          <p><small>Version: {{ roster.game_version }}</small></p>
+                        </hgroup>
+                    </header>
+                    {% for player in roster.players %}
+                        <details>
+                            <summary>
+                                <img src="{{ player.flag_url }}"
+                                     alt="{{ player.country }} flag"
+                                     width="25px"
+                                     title="{{ player.country }}"
+                                     class="flag">
+                                {% if player.liquipedia_url %}
+                                <a class="contrast" href="{{ player.liquipedia_url }}">{{ player.nickname }}</a>
+                                {% else %}
+                                <span>{{ player.nickname }}</span>
+                                {% endif %}
+                                {% if player.is_captain %}
+                                    <img src="/img/crown.png"
+                                         alt="IGL"
+                                         width="25px"
+                                         title="In Game Leader">
+                                {% endif %}
+                                {% if player.is_coach %}
+                                    <img src="/img/whistle.png"
+                                         alt="Coach"
+                                         width="25px"
+                                         title="Coach">
+                                {% endif %}
+                            </summary>
+                            <div>
+                                <p><small>Name: {{ player.name }}</small></p>
+                                <p><small>Country: {{ player.country }}</small></p>
+                                <p><small>Position: {{ player.position }}</small></p>
+                                <p><small>Join Date: {{ player.join_date }}</small></p>
+                                <p><small>Inactive Date: {{ player.inactive_date }}</small>
+                                </p>
+                                <p><small>Leave Date: {{ player.leave_date }}</small></p>
+                                <p>
+                                    <small>
+                                        {% if player.liquipedia_url %}
+                                        <a class="secondary" href="{{ player.liquipedia_url }}">Liquipedia profile</a>
+                                        {% else %}
+                                        {{ player.nickname }}
+                                        {% endif %}
+                                    </small>
+                                </p>
+                            </div>
+                        </details>
+                        <hr>
+                    {% endfor %}
+                </article>
+            {% endfor %}
         </div>
-    {% endfor %}
-</div>
+    </main>
+{% endblock %}

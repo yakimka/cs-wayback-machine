@@ -73,7 +73,6 @@ class TeamsSpider(scrapy.Spider):
                     ),
                     "position": position or None,
                     "is_captain": row.css('td.ID i[title="Captain"]').get() is not None,
-                    "is_coach": "coach" in position.lower(),
                     "flag_name": flag_name or None,
                     "flag_url": (
                         response.urljoin(flag_url) if flag_url is not None else None

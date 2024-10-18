@@ -12,10 +12,12 @@ if TYPE_CHECKING:
 @dataclass(frozen=True)
 class RosterPlayer:
     team_id: str
+    game_version: str
     nickname: str
+    name: str
     liquipedia_url: str | None
     is_captain: bool
-    is_coach: bool
+    position: str | None
     flag_name: str | None
     flag_url: str | None
     join_date: date
@@ -34,3 +36,10 @@ class RosterPlayer:
 class Roster:
     players: list[RosterPlayer]
     active_period: DateRange
+
+
+@dataclass
+class Team:
+    name: str
+    full_name: str
+    liquipedia_url: str
