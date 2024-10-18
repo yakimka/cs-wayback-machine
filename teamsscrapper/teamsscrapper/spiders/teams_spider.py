@@ -19,7 +19,10 @@ class TeamsSpider(scrapy.Spider):
 
     def parse(self, response: Response, **kwargs: Any) -> Generator:
         teams = response.css("#mw-pages .mw-content-ltr a::attr(href)").getall()
-        yield from response.follow_all(teams, callback=self.parse_teams)
+        for team in teams:
+            if "User:" in team:
+                continue
+            yield response.follow(team, callback=self.parse_teams)
 
         next_page = response.css('#mw-pages a:contains("next page")::attr(href)').get()
         if next_page is not None:
@@ -88,7 +91,7 @@ class TeamsSpider(scrapy.Spider):
 
     def _extract_dates(self, node: Response) -> dict[str, str | None]:  # noqa: C901
         dates = node.css("td.Date")
-        dates_parsed = {}
+        dates_parsed: dict[str, str | None] = {}
         for date_el in dates:
             date_type = date_el.css(".MobileStuffDate::text").get()
             date_type = (
@@ -97,11 +100,14 @@ class TeamsSpider(scrapy.Spider):
             date_value = date_el.css("i::text").get("").strip()
             if not date_value:
                 date_value = date_el.css("i abbr::text").get("").strip()
-            dates_parsed[date_type] = date_value or None
+            empty_value = None
+            if "leave" in date_type.lower():
+                empty_value = "unknown"
+            dates_parsed[date_type] = date_value or empty_value
 
-        raw_dates = {}
+        raw_dates: dict[str, str | None] = {}
         for date_type, value in dates_parsed.items():
-            if value is not None:
+            if value is not None and value != "unknown":
                 value = value.strip()[:10]
                 raw_dates[f"{date_type}_raw"] = ""
                 try:

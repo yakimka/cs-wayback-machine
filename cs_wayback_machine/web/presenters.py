@@ -124,6 +124,10 @@ class TeamRostersPresenter:
 def _format_date(val: date | None) -> str:
     if not val:
         return "-"
+    if val == date.min:
+        return "Unknown"
+    if val == date.max:
+        return "Present"
     return val.strftime("%-d %b %Y")
 
 

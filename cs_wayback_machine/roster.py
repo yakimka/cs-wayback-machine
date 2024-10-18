@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date
 
 from cs_wayback_machine.date_util import DateRange
 from cs_wayback_machine.entities import Roster, RosterPlayer
@@ -49,7 +49,7 @@ def create_rosters(players: list[RosterPlayer]) -> list[Roster]:  # noqa: C901
         # After processing events, check if active_players changed
         if active_players != previous_active_players:
             if previous_active_players is not None:
-                roster_period_end = event_date - timedelta(days=1)
+                roster_period_end = event_date
                 assert current_period_start is not None
                 roster_period = DateRange(
                     start=current_period_start, end=roster_period_end
