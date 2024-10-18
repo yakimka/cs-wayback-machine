@@ -1,8 +1,13 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from datetime import date
+from typing import TYPE_CHECKING
 
 from cs_wayback_machine.date_util import DateRange
 from cs_wayback_machine.entities import Roster, RosterPlayer
+
+if TYPE_CHECKING:
+    from datetime import date
 
 
 @dataclass(order=True)
