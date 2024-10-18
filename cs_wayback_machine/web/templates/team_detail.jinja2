@@ -44,10 +44,10 @@
                                 <p><small>Name: {{ player.name }}</small></p>
                                 <p><small>Country: {{ player.country }}</small></p>
                                 <p><small>Position: {{ player.position }}</small></p>
-                                <p><small>Join Date: {{ player.join_date }}</small></p>
-                                <p><small>Inactive Date: {{ player.inactive_date }}</small>
+                                <p><small>Join Date: {{ player_date(player.join_date, player.join_date_raw) }}</small></p>
+                                <p><small>Inactive Date: {{ player_date(player.inactive_date, player.inactive_date_raw) }}</small>
                                 </p>
-                                <p><small>Leave Date: {{ player.leave_date }}</small></p>
+                                <p><small>Leave Date: {{ player_date(player.leave_date, player.leave_date_raw)}}</small></p>
                                 <p>
                                     <small>
                                         {% if player.liquipedia_url %}

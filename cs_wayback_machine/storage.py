@@ -33,10 +33,9 @@ class RosterStorage:
         query = """
         SELECT player_full_id, team_id, game_version, player_id, name, liquipedia_url,
             is_captain, position, flag_name, flag_url, join_date, inactive_date,
-            leave_date
+            leave_date, join_date_raw, inactive_date_raw, leave_date_raw
         FROM rosters
         WHERE team_id = $team_id
-        AND join_date IS NOT NULL  -- TODO delete this line
         AND join_date <= $end_date
         AND (leave_date >= $start_date OR leave_date IS NULL)
         AND (inactive_date >= $start_date OR inactive_date IS NULL);
@@ -59,7 +58,7 @@ class RosterStorage:
         query = """
         SELECT player_full_id, team_id, game_version, player_id, name, liquipedia_url,
             is_captain, position, flag_name, flag_url, join_date, inactive_date,
-            leave_date
+            leave_date, join_date_raw, inactive_date_raw, leave_date_raw
         FROM rosters
         WHERE player_full_id = $player_id;
         """
@@ -110,9 +109,12 @@ def load_duck_db_database(parsed_rosters: Path) -> duckdb.DuckDBPyConnection:
             position TEXT,
             flag_name TEXT,
             flag_url TEXT,
-            join_date DATE NOT NULL,
+            join_date DATE,
             inactive_date DATE,
-            leave_date DATE
+            leave_date DATE,
+            join_date_raw TEXT,
+            inactive_date_raw TEXT,
+            leave_date_raw TEXT
         )
     """
     )
@@ -129,13 +131,13 @@ def load_duck_db_database(parsed_rosters: Path) -> duckdb.DuckDBPyConnection:
         """
     INSERT INTO rosters (
         player_full_id, team_id, game_version, player_id, name, liquipedia_url,
-        is_captain, position, flag_name, flag_url, join_date, inactive_date, leave_date
+        is_captain, position, flag_name, flag_url, join_date, inactive_date, leave_date,
+        join_date_raw, inactive_date_raw, leave_date_raw
     )
     SELECT player_full_id, team_full_name, game_version, player_id, full_name,
         player_url, is_captain, position, flag_name, flag_url, join_date, inactive_date,
-        leave_date
+        leave_date, join_date_raw, inactive_date_raw, leave_date_raw
     FROM rosters_rel
-    WHERE join_date IS NOT NULL -- TODO delete this line
     """
     )
     return conn

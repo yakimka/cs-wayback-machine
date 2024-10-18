@@ -20,9 +20,9 @@
                 <article>
                     <header>{{ team.team_id }}</header>
                     <p><small>Position: {{ team.position }}</small></p>
-                    <p><small>Join Date: {{ team.join_date }}</small></p>
-                    <p><small>Inactive Date: {{ team.inactive_date }}</small></p>
-                    <p><small>Leave Date: {{ team.leave_date }}</small></p>
+                    <p><small>Join Date: {{ player_date(team.join_date, team.join_date_raw) }}</small></p>
+                    <p><small>Inactive Date: {{ player_date(team.inactive_date, team.inactive_date_raw) }}</small></p>
+                    <p><small>Leave Date: {{ player_date(team.leave_date, team.leave_date_raw) }}</small></p>
                     <p><a class="contrast" href="{{ team.team_page_url }}">Go to Team Page</a></p>
                 </article>
             {% endfor %}
