@@ -1,16 +1,21 @@
 {% extends "base.jinja2" %}
+{% block title %}{{ data.team_name }}{% endblock %}
 {% block body %}
     <main class="container">
     <div role="group">
         <h1>{{ data.team_name }} <sup><a class="secondary extra-small" href="{{ data.liquipedia_url }}">liquipedia</a></sup></h1>
     </div>
-        <div class="roster-grid">
+        <div class="grid-4x">
             {% for roster in data.rosters %}
                 <article>
                     <header>
                         <hgroup style="margin-bottom: 0;">
-                          <p>{{ roster.period }}</p>
-                          <p><small>Version: {{ roster.game_version }}</small></p>
+                          <p>
+                              {{ roster.period }}
+                              {% if roster.game_version != "-" %}
+                              <sup><span style="font-size: 0.475em;">{{ roster.game_version }}</span></sup>
+                              {% endif %}
+                          </p>
                         </hgroup>
                     </header>
                     {% for player in roster.players %}
@@ -21,11 +26,7 @@
                                      width="25px"
                                      title="{{ player.country }}"
                                      class="flag">
-                                {% if player.liquipedia_url %}
-                                <a class="contrast" href="{{ player.liquipedia_url }}">{{ player.nickname }}</a>
-                                {% else %}
-                                <span>{{ player.nickname }}</span>
-                                {% endif %}
+                                <a class="contrast" href="{{ player.player_page_url }}">{{ player.nickname }}</a>
                                 {% if player.is_captain %}
                                     <img src="/img/crown.png"
                                          alt="IGL"

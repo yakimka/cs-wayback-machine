@@ -1,0 +1,31 @@
+{% extends "base.jinja2" %}
+{% block title %}{{ data.player_nickname }}{% endblock %}
+{% block body %}
+    <main class="container">
+    <div role="group">
+        <h1>
+            <img src="{{ data.flag_url }}"
+             alt="{{ data.country }} flag"
+             width="32px"
+             title="{{ data.country }}"
+             class="flag">
+            {{ data.player_nickname }}
+            {% if data.liquipedia_url %}
+            <sup><a class="secondary extra-small" href="{{ data.liquipedia_url }}">liquipedia</a></sup>
+            {% endif %}
+        </h1>
+    </div>
+        <div class="grid-4x">
+            {% for team in data.teams %}
+                <article>
+                    <header>{{ team.team_id }}</header>
+                    <p><small>Position: {{ team.position }}</small></p>
+                    <p><small>Join Date: {{ team.join_date }}</small></p>
+                    <p><small>Inactive Date: {{ team.inactive_date }}</small></p>
+                    <p><small>Leave Date: {{ team.leave_date }}</small></p>
+                    <p><a class="contrast" href="{{ team.team_page_url }}">Go to Team Page</a></p>
+                </article>
+            {% endfor %}
+        </div>
+    </main>
+{% endblock %}

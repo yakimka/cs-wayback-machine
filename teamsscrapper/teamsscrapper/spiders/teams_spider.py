@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from typing import TYPE_CHECKING, Any
+from urllib.parse import unquote
 
 import scrapy
 
@@ -36,6 +37,7 @@ class TeamsSpider(scrapy.Spider):
                     r'ancestor::*[re:test(@class, "content\d+")][1]'
                 )
                 content_class = parent_content_el.xpath("@class").get()
+                game_version: str | None = None
                 if content_class is not None:
                     if match := re.search(r"content(\d+)", content_class):
                         game_version = tab_names.get(match.group(1))
@@ -58,19 +60,20 @@ class TeamsSpider(scrapy.Spider):
                 new_team = (
                     row.css("td.NewTeam .team-template-text a::text").get("").strip()
                 )
+                team_slug = self._extract_name_from_url(response.url)
+                player_id = row.css("td.ID a::text").get().strip()
+                player_slug = self._extract_name_from_url(player_url) or ""
                 yield {
                     "team_name": team_name,
                     "team_url": response.url,
-                    "team_full_name": self._extract_full_name_from_url(response.url),
+                    "team_full_name": self._clean_text(team_slug or ""),
+                    "team_slug": team_slug,
                     "game_version": game_version,
                     "card_id": card_id,
-                    "player_id": row.css("td.ID a::text").get(),
+                    "player_id": player_id,
                     "player_url": player_url,
-                    "player_full_id": (
-                        self._extract_full_name_from_url(player_url)
-                        if player_url
-                        else None
-                    ),
+                    "player_full_id": self._clean_text(player_slug) or player_id,
+                    "player_slug": player_slug,
                     "position": position or None,
                     "is_captain": row.css('td.ID i[title="Captain"]').get() is not None,
                     "flag_name": flag_name or None,
@@ -135,5 +138,10 @@ class TeamsSpider(scrapy.Spider):
         parent_div = games_element.xpath("./parent::div")
         return parent_div.css("a ::text").getall()
 
-    def _extract_full_name_from_url(self, url: str) -> str:
+    def _extract_name_from_url(self, url: str) -> str | None:
+        if not url or "action=edit" in url:
+            return None
         return url.split("/")[-1].replace("_", " ")
+
+    def _clean_text(self, text: str) -> str:
+        return unquote(text.strip().replace("_", " "))

@@ -1,0 +1,41 @@
+{% extends "base.jinja2" %}
+{% block title %}Counter Strike Wayback Machine{% endblock %}
+{% block in_head %}
+    <link rel="stylesheet" href="/awesomplete.css">
+    <script src="/awesomplete.min.js"></script>
+{% endblock %}
+{% block body %}
+    <main class="container">
+        <form action="/goto/" method="get" id="search-form">
+            <fieldset role="group">
+                <input
+                        id="search"
+                        type="search"
+                        name="q"
+                        placeholder="Type a CS team or player name, for example: Natus Vincere"
+                        aria-label="Search"
+                        class="awesomplete"
+                        list="mylist"
+                />
+                <datalist id="mylist">
+                    {% for item in data.search_items %}
+                        <option>{{ item | safe }}</option>
+                    {% endfor %}
+                </datalist>
+                <input type="submit" value="Search"/>
+            </fieldset>
+        </form>
+        <script>
+            let input = document.getElementById("search");
+            new Awesomplete(input, {
+                minChars: 1,
+                maxItems: 100,
+                autoFirst: true,
+                tabSelect: true,
+            });
+            input.addEventListener("awesomplete-selectcomplete", function() {
+                document.getElementById("search-form").submit();
+            });
+        </script>
+    </main>
+{% endblock %}

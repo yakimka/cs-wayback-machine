@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class RosterPlayer:
+    player_id: str
     team_id: str
     game_version: str
     nickname: str
