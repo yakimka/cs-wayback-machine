@@ -1,19 +1,40 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from urllib.parse import quote
 
 from picodi import Provide, inject
-from starlette.responses import HTMLResponse, Response
+from starlette.responses import HTMLResponse, RedirectResponse, Response
 
 from cs_wayback_machine.web.deps import get_rosters_storage
 from cs_wayback_machine.web.html_render import render_404, render_html
-from cs_wayback_machine.web.presenters import TeamRostersPresenter
+from cs_wayback_machine.web.presenters import MainPagePresenter, TeamRostersPresenter
 from cs_wayback_machine.web.slugify import slugify
 
 if TYPE_CHECKING:
     from starlette.requests import Request
 
     from cs_wayback_machine.storage import RosterStorage
+
+
+@inject
+def main_page_view(
+    request: Request,  # noqa: U100
+    rosters_storage: RosterStorage = Provide(get_rosters_storage),
+) -> Response:
+    presenter = MainPagePresenter(rosters_storage=rosters_storage)
+    result = presenter.present()
+    html = render_html("main_page.jinja2", result)
+    return HTMLResponse(html)
+
+
+def goto_view(request: Request) -> Response:
+    query = request.query_params.get("q", "")
+    if not query:
+        return RedirectResponse(url="/")
+
+    slug = quote(slugify(query), safe="/()")
+    return RedirectResponse(url=f"/teams/{slug}/")
 
 
 @inject

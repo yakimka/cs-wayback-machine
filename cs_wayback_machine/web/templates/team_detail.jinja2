@@ -1,4 +1,5 @@
 {% extends "base.jinja2" %}
+{% block title %}{{ data.team_name }}{% endblock %}
 {% block body %}
     <main class="container">
     <div role="group">
@@ -9,8 +10,12 @@
                 <article>
                     <header>
                         <hgroup style="margin-bottom: 0;">
-                          <p>{{ roster.period }}</p>
-                          <p><small>Version: {{ roster.game_version }}</small></p>
+                          <p>
+                              {{ roster.period }}
+                              {% if roster.game_version != "-" %}
+                              <sup><span style="font-size: 0.475em;">{{ roster.game_version }}</span></sup>
+                              {% endif %}
+                          </p>
                         </hgroup>
                     </header>
                     {% for player in roster.players %}

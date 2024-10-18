@@ -55,6 +55,14 @@ class RosterStorage:
             players.append(RosterPlayer(*row))
         return players
 
+    def get_team_names(self) -> list[str]:
+        query = """
+        SELECT full_name
+        FROM teams;
+        """
+        statement = self._conn.execute(query)
+        return [row[0] for row in statement.fetchall()]
+
 
 def load_duck_db_database(parsed_rosters: Path) -> duckdb.DuckDBPyConnection:
     conn = duckdb.connect(":memory:")

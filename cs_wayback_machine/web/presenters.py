@@ -66,10 +66,9 @@ class TeamRostersPresenter:
         result = []
         for roster in rosters:
             players = []
-            game_version: str | None = None
+            game_versions = []
             for player in roster.players:
-                if game_version is None and player.game_version:
-                    game_version = player.game_version
+                game_versions.append(player.game_version)
                 positions = []
                 position_field = (player.position or "").lower()
                 if player.is_captain:
@@ -99,7 +98,7 @@ class TeamRostersPresenter:
                 continue
             result.append(
                 RosterDTO(
-                    game_version=_format_game_version(game_version),
+                    game_version=_choose_game_version(game_versions),
                     players=sorted(players, key=lambda x: x.nickname),
                     period=f"{_format_date(period_start)} - {_format_date(period_end)}",
                 )
@@ -114,17 +113,43 @@ def _format_date(val: date | None) -> str:
     return val.strftime("%-d %b %Y")
 
 
+def _choose_game_version(game_versions: list[str]) -> str:
+    game_versions = [_format_game_version(item) for item in game_versions]
+    if not game_versions:
+        return "-"
+    priority = ["-", "CS1.6", "CS:S", "CS:GO", "CS2"]
+    for item in priority:
+        if item in game_versions:
+            return item
+    return "-"
+
+
 def _format_game_version(val: str | None) -> str:
     if not val:
         return "-"
     val = val.strip()
     val_lower = val.lower()
-    if "global" in val_lower:
-        return "CS:GO"
     if "source" in val_lower:
         return "CS:S"
     if val_lower == "cs":
-        return "CS 1.6"
-    if "2" in val_lower:
-        return "CS2"
+        return "CS1.6"
+    # Due to the data representation inconsistency
+    #   we can't be sure about the exact game version
+    #   so show only old versions
+    if "2" in val_lower or "go" in val_lower:
+        return "-"
     return val
+
+
+@dataclass
+class MainPageDTO:
+    search_items: list[str]
+
+
+class MainPagePresenter:
+    def __init__(self, *, rosters_storage: RosterStorage) -> None:
+        self._rosters_storage = rosters_storage
+
+    def present(self) -> MainPageDTO:
+        team_names = self._rosters_storage.get_team_names()
+        return MainPageDTO(search_items=sorted(team_names))
