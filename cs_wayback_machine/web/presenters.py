@@ -70,6 +70,8 @@ class TeamRostersPresenter:
     def _prepare_rosters(self, rosters: list[Roster]) -> list[RosterDTO]:
         result = []
         for roster in rosters:
+            if not roster.players:
+                continue
             players = []
             game_versions = []
             for player in roster.players:
