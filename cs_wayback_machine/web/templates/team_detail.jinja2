@@ -18,9 +18,9 @@
                                      alt="{{ player.country }} flag"
                                      width="25px"
                                      title="{{ player.country }}"
-                                     style="border: 1px solid white;">
+                                     class="flag">
                                 {% if player.liquipedia_url %}
-                                <a href="{{ player.liquipedia_url }}">{{ player.nickname }}</a>
+                                <a class="contrast" href="{{ player.liquipedia_url }}">{{ player.nickname }}</a>
                                 {% else %}
                                 <span>{{ player.nickname }}</span>
                                 {% endif %}
@@ -45,6 +45,15 @@
                                 <p><small>Inactive Date: {{ player.inactive_date }}</small>
                                 </p>
                                 <p><small>Leave Date: {{ player.leave_date }}</small></p>
+                                <p>
+                                    <small>
+                                        {% if player.liquipedia_url %}
+                                        <a class="secondary" href="{{ player.liquipedia_url }}">Liquipedia profile</a>
+                                        {% else %}
+                                        {{ player.nickname }}
+                                        {% endif %}
+                                    </small>
+                                </p>
                             </div>
                         </details>
                         <hr>
