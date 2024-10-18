@@ -37,6 +37,7 @@ class RosterDTO:
 @dataclass
 class TeamRostersDTO:
     team_name: str
+    liquipedia_url: str
     rosters: list[RosterDTO]
 
 
@@ -57,7 +58,9 @@ class TeamRostersPresenter:
         if not players:
             return None
         rosters = self._prepare_rosters(create_rosters(players))
-        return TeamRostersDTO(team_name=team.name, rosters=rosters)
+        return TeamRostersDTO(
+            team_name=team.name, liquipedia_url=team.liquipedia_url, rosters=rosters
+        )
 
     def _prepare_rosters(self, rosters: list[Roster]) -> list[RosterDTO]:
         result = []

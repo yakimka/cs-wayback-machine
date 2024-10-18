@@ -112,3 +112,6 @@ body > header .dropdown summary {
 .flag {
     border: 1px solid var(--pico-contrast-hover);
 }
+.extra-small {
+    font-size: 0.375em;
+}

@@ -1,7 +1,9 @@
 {% extends "base.jinja2" %}
 {% block body %}
     <main class="container">
-        <h1>{{ data.team_name }}</h1>
+    <div role="group">
+        <h1>{{ data.team_name }} <sup><a class="secondary extra-small" href="{{ data.liquipedia_url }}">liquipedia</a></sup></h1>
+    </div>
         <div class="roster-grid">
             {% for roster in data.rosters %}
                 <article>
