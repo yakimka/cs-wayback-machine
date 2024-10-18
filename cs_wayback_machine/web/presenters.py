@@ -51,8 +51,8 @@ class TeamRostersPresenter:
             return None
         players = self._rosters_storage.get_players(
             team_id=team_id,
-            date_from=date(2000, 1, 1),
-            date_to=date(2023, 12, 31),
+            date_from=date(2000, 11, 9),
+            date_to=date(2025, 12, 31),
         )
         if not players:
             return None
