@@ -109,6 +109,14 @@ body > header .dropdown summary {
     grid-row-gap: var(--pico-grid-row-gap);
 }
 
+.grid-statistics {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Two equal-width columns */
+    grid-auto-rows: auto; /* Auto-size rows */
+    grid-auto-flow: dense; /* Allows items to fill gaps */
+    grid-gap: var(--pico-grid-column-gap) var(--pico-grid-row-gap); /* Define column and row gaps */
+}
+
 .flag {
     border: 1px solid var(--pico-contrast-hover);
 }

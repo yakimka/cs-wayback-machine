@@ -10,16 +10,16 @@ from cs_wayback_machine.web.slugify import slugify
 
 if TYPE_CHECKING:
     from cs_wayback_machine.entities import Roster, RosterPlayer
-    from cs_wayback_machine.storage import RosterStorage
+    from cs_wayback_machine.storage import RosterStorage, StatisticsCalculator
 
 
 @dataclass
 class PlayerDTO:
+    player_id: str
     nickname: str
     name: str
     is_captain: bool
     is_coach: bool
-    player_page_url: str
     liquipedia_url: str | None
     flag_url: str
     country: str
@@ -79,11 +79,11 @@ class TeamRostersPresenter:
                 position = _format_player_position(player)
                 players.append(
                     PlayerDTO(
+                        player_id=player.player_id,
                         nickname=player.nickname,
                         name=player.name,
                         is_captain=player.is_captain,
                         is_coach="Coach" in position,
-                        player_page_url=f"/players/{slugify(player.player_id)}/",
                         liquipedia_url=player.liquipedia_url,
                         flag_url=_format_flag_url(player.flag_name),
                         country=player.flag_name or "-",
@@ -176,20 +176,93 @@ def _format_flag_url(flag_name: str | None) -> str:
 
 
 @dataclass
+class RowValueDTO:
+    value: str
+    is_team_id: bool = False
+    is_player_id: bool = False
+
+
+@dataclass
+class TableDTO:
+    title: str
+    headers: list[str]
+    rows: list[list[RowValueDTO]]
+
+
+@dataclass
 class MainPageDTO:
     search_items: list[str]
+    statistics: list[TableDTO]
 
 
 class MainPagePresenter:
-    def __init__(self, *, rosters_storage: RosterStorage) -> None:
+    def __init__(
+        self,
+        *,
+        rosters_storage: RosterStorage,
+        statistics_calculator: StatisticsCalculator,
+    ) -> None:
         self._rosters_storage = rosters_storage
+        self._statistics_calculator = statistics_calculator
 
     def present(self) -> MainPageDTO:
         team_names = sorted(self._rosters_storage.get_team_names())
         team_names = [f"team:{item}" for item in team_names if item]
         player_names = sorted(self._rosters_storage.get_player_names())
         player_names = [f"player:{item}" for item in player_names if item]
-        return MainPageDTO(search_items=team_names + player_names)
+        return MainPageDTO(
+            search_items=team_names + player_names, statistics=self._build_statistics()
+        )
+
+    def _build_statistics(self) -> list[TableDTO]:
+        calc = self._statistics_calculator
+        return [
+            TableDTO(
+                title="TOP5 Players with most days in current team (without breaks)",
+                headers=["Player", "Team", "Days"],
+                rows=[
+                    [
+                        RowValueDTO(item[0], is_player_id=True),
+                        RowValueDTO(item[1], is_team_id=True),
+                        RowValueDTO(str(item[2])),
+                    ]
+                    for item in calc.players_with_most_days_in_current_team(limit=5)
+                ],
+            ),
+            TableDTO(
+                title="TOP5 Players with most teams",
+                headers=["Player", "Number of teams"],
+                rows=[
+                    [
+                        RowValueDTO(item[0], is_player_id=True),
+                        RowValueDTO(str(item[1])),
+                    ]
+                    for item in calc.players_with_most_teams(limit=5)
+                ],
+            ),
+            TableDTO(
+                title="TOP10 Countries by active players",
+                headers=["Country", "Number of active players"],
+                rows=[
+                    [
+                        RowValueDTO(item[0]),
+                        RowValueDTO(str(item[1])),
+                    ]
+                    for item in calc.active_players_by_country(limit=10)
+                ],
+            ),
+            TableDTO(
+                title="TOP10 Teams with most players in history",
+                headers=["Team name", "Number of players"],
+                rows=[
+                    [
+                        RowValueDTO(item[0], is_team_id=True),
+                        RowValueDTO(str(item[1])),
+                    ]
+                    for item in calc.teams_with_most_players(limit=10)
+                ],
+            ),
+        ]
 
 
 @dataclass
@@ -202,7 +275,6 @@ class PlayerTeamDTO:
     join_date_raw: str
     inactive_date_raw: str
     leave_date_raw: str
-    team_page_url: str
 
 
 @dataclass
@@ -223,11 +295,12 @@ class PlayerPagePresenter:
         if not player:
             return None
 
+        latest_player = max(player, key=lambda x: x.active_period.start)
         return PlayerPageDTO(
-            player_nickname=player[-1].nickname,
-            country=player[-1].flag_name or "-",
-            flag_url=_format_flag_url(player[-1].flag_name),
-            liquipedia_url=player[-1].liquipedia_url,
+            player_nickname=latest_player.nickname,
+            country=latest_player.flag_name or "-",
+            flag_url=_format_flag_url(latest_player.flag_name),
+            liquipedia_url=latest_player.liquipedia_url,
             teams=self._prepare_teams(player),
         )
 
@@ -245,7 +318,6 @@ class PlayerPagePresenter:
                     join_date_raw=item.join_date_raw or "",
                     inactive_date_raw=item.inactive_date_raw or "",
                     leave_date_raw=item.leave_date_raw or "",
-                    team_page_url=f"/teams/{slugify(item.team_id)}/",
                 )
             )
         return teams

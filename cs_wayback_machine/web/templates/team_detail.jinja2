@@ -26,7 +26,7 @@
                                      width="25px"
                                      title="{{ player.country }}"
                                      class="flag">
-                                <a class="contrast" href="{{ player.player_page_url }}">{{ player.nickname }}</a>
+                                <a class="contrast" href="{{ player_link(player.player_id) }}">{{ player.nickname }}</a>
                                 {% if player.is_captain %}
                                     <img src="/img/crown.png"
                                          alt="IGL"

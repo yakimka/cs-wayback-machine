@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from picodi import Provide, inject
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 
-from cs_wayback_machine.web.deps import get_rosters_storage
+from cs_wayback_machine.web.deps import get_rosters_storage, get_statistics_calculator
 from cs_wayback_machine.web.html_render import render_404, render_html
 from cs_wayback_machine.web.presenters import (
     MainPagePresenter,
@@ -17,15 +17,18 @@ from cs_wayback_machine.web.slugify import slugify
 if TYPE_CHECKING:
     from starlette.requests import Request
 
-    from cs_wayback_machine.storage import RosterStorage
+    from cs_wayback_machine.storage import RosterStorage, StatisticsCalculator
 
 
 @inject
 def main_page_view(
     request: Request,  # noqa: U100
     rosters_storage: RosterStorage = Provide(get_rosters_storage),
+    statistics_calculator: StatisticsCalculator = Provide(get_statistics_calculator),
 ) -> Response:
-    presenter = MainPagePresenter(rosters_storage=rosters_storage)
+    presenter = MainPagePresenter(
+        rosters_storage=rosters_storage, statistics_calculator=statistics_calculator
+    )
     result = presenter.present()
     html = render_html("main_page.jinja2", result)
     return HTMLResponse(html)

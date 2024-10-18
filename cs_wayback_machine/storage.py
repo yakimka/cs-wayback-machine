@@ -141,3 +141,73 @@ def load_duck_db_database(parsed_rosters: Path) -> duckdb.DuckDBPyConnection:
     """
     )
     return conn
+
+
+class StatisticsCalculator:
+    def __init__(self, conn: duckdb.DuckDBPyConnection) -> None:
+        self._conn = conn
+
+    def players_with_most_days_in_current_team(
+        self, *, limit: int
+    ) -> list[tuple[str, str, int]]:
+        query = """
+        SELECT
+            player_full_id,
+            team_id,
+            SUM(CURRENT_DATE - join_date) AS total_days
+        FROM rosters
+        WHERE join_date IS NOT NULL AND inactive_date IS NULL and leave_date IS NULL
+            AND (join_date_raw IS NULL OR join_date_raw = '')
+            AND (leave_date_raw IS NULL OR leave_date_raw = '')
+            AND (inactive_date_raw IS NULL OR inactive_date_raw = '')
+        GROUP BY player_full_id, team_id
+        ORDER BY total_days DESC
+        LIMIT $limit;
+        """
+        statement = self._conn.execute(query, parameters={"limit": limit})
+        return statement.fetchall()
+
+    def players_with_most_teams(self, *, limit: int) -> list[tuple[str, int]]:
+        query = """
+        SELECT
+            player_full_id,
+            COUNT(DISTINCT team_id) AS total_teams
+        FROM rosters
+        WHERE join_date IS NOT NULL
+        GROUP BY player_full_id
+        ORDER BY total_teams DESC
+        LIMIT $limit;
+        """
+        statement = self._conn.execute(query, parameters={"limit": limit})
+        return statement.fetchall()
+
+    def active_players_by_country(self, *, limit: int) -> list[tuple[str, int]]:
+        query = """
+        SELECT
+            flag_name,
+            COUNT(DISTINCT player_full_id) AS total_players
+        FROM rosters
+        WHERE join_date IS NOT NULL AND leave_date IS NULL
+            AND (join_date_raw IS NULL OR join_date_raw = '')
+            AND (leave_date_raw IS NULL OR leave_date_raw = '')
+            AND (inactive_date_raw IS NULL OR inactive_date_raw = '')
+        GROUP BY flag_name
+        ORDER BY total_players DESC
+        LIMIT $limit;
+        """
+        statement = self._conn.execute(query, parameters={"limit": limit})
+        return statement.fetchall()
+
+    def teams_with_most_players(self, *, limit: int) -> list[tuple[str, int]]:
+        query = """
+        SELECT
+            team_id,
+            COUNT(DISTINCT player_full_id) AS total_players
+        FROM rosters
+        WHERE join_date IS NOT NULL
+        GROUP BY team_id
+        ORDER BY total_players DESC
+        LIMIT $limit;
+        """
+        statement = self._conn.execute(query, parameters={"limit": limit})
+        return statement.fetchall()
