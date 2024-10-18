@@ -33,9 +33,45 @@
                 autoFirst: true,
                 tabSelect: true,
             });
-            input.addEventListener("awesomplete-selectcomplete", function() {
+            input.addEventListener("awesomplete-selectcomplete", function () {
                 document.getElementById("search-form").submit();
             });
         </script>
+        <section style="margin-top: 150px;">
+            <h2>Statistics</h2>
+            <div class="grid-statistics">
+                {% for table in data.statistics %}
+                    <table class="striped">
+                        <caption>{{ table.title }}</caption>
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            {% for header in table.headers %}
+                                <th>{{ header }}</th>
+                            {% endfor %}
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for row in table.rows %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                {% for cell in row %}
+                                    <td>
+                                    {% if cell.is_team_id %}
+                                        <a class="contrast" href="{{ team_link(cell.value) }}">{{ cell.value }}</a>
+                                    {% elif cell.is_player_id %}
+                                        <a class="contrast" href="{{ player_link(cell.value) }}">{{ cell.value }}</a>
+                                    {% else %}
+                                        {{ cell.value }}
+                                    {% endif %}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                {% endfor %}
+            </div>
+        </section>
     </main>
 {% endblock %}

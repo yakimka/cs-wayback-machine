@@ -4,7 +4,11 @@ from pathlib import Path
 import duckdb
 from picodi import Provide, SingletonScope, dependency, inject
 
-from cs_wayback_machine.storage import RosterStorage, load_duck_db_database
+from cs_wayback_machine.storage import (
+    RosterStorage,
+    StatisticsCalculator,
+    load_duck_db_database,
+)
 from cs_wayback_machine.web import ROOT_DIR
 
 
@@ -25,3 +29,10 @@ def get_rosters_storage(
     duckdb_conn: duckdb.DuckDBPyConnection = Provide(get_duckdb_connection),
 ) -> RosterStorage:
     return RosterStorage(duckdb_conn)
+
+
+@inject
+def get_statistics_calculator(
+    duckdb_conn: duckdb.DuckDBPyConnection = Provide(get_duckdb_connection),
+) -> StatisticsCalculator:
+    return StatisticsCalculator(duckdb_conn)

@@ -23,7 +23,7 @@
                     <p><small>Join Date: {{ player_date(team.join_date, team.join_date_raw) }}</small></p>
                     <p><small>Inactive Date: {{ player_date(team.inactive_date, team.inactive_date_raw) }}</small></p>
                     <p><small>Leave Date: {{ player_date(team.leave_date, team.leave_date_raw) }}</small></p>
-                    <p><a class="contrast" href="{{ team.team_page_url }}">Go to Team Page</a></p>
+                    <p><a class="contrast" href="{{ team_link(team.team_id) }}">Go to Team Page</a></p>
                 </article>
             {% endfor %}
         </div>
