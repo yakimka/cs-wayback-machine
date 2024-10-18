@@ -5,7 +5,7 @@
     <div role="group">
         <h1>{{ data.team_name }} <sup><a class="secondary extra-small" href="{{ data.liquipedia_url }}">liquipedia</a></sup></h1>
     </div>
-        <div class="roster-grid">
+        <div class="grid-4x">
             {% for roster in data.rosters %}
                 <article>
                     <header>
@@ -26,11 +26,7 @@
                                      width="25px"
                                      title="{{ player.country }}"
                                      class="flag">
-                                {% if player.liquipedia_url %}
-                                <a class="contrast" href="{{ player.liquipedia_url }}">{{ player.nickname }}</a>
-                                {% else %}
-                                <span>{{ player.nickname }}</span>
-                                {% endif %}
+                                <a class="contrast" href="{{ player.player_page_url }}">{{ player.nickname }}</a>
                                 {% if player.is_captain %}
                                     <img src="/img/crown.png"
                                          alt="IGL"

@@ -8,7 +8,7 @@ from cs_wayback_machine.roster import create_rosters
 from cs_wayback_machine.web.slugify import slugify
 
 if TYPE_CHECKING:
-    from cs_wayback_machine.entities import Roster
+    from cs_wayback_machine.entities import Roster, RosterPlayer
     from cs_wayback_machine.storage import RosterStorage
 
 
@@ -18,6 +18,7 @@ class PlayerDTO:
     name: str
     is_captain: bool
     is_coach: bool
+    player_page_url: str
     liquipedia_url: str | None
     flag_url: str
     country: str
@@ -69,24 +70,18 @@ class TeamRostersPresenter:
             game_versions = []
             for player in roster.players:
                 game_versions.append(player.game_version)
-                positions = []
-                position_field = (player.position or "").lower()
-                if player.is_captain:
-                    positions.append("Captain")
-                if "coach" in position_field:
-                    positions.append("Coach")
-                if "loan" in position_field:
-                    positions.append("Loan")
+                position = _format_player_position(player)
                 players.append(
                     PlayerDTO(
                         nickname=player.nickname,
                         name=player.name,
                         is_captain=player.is_captain,
-                        is_coach="Coach" in positions,
+                        is_coach="Coach" in position,
+                        player_page_url=f"/players/{slugify(player.player_id)}/",
                         liquipedia_url=player.liquipedia_url,
-                        flag_url=f"/img/f/{slugify(player.flag_name or "")}.svg",
+                        flag_url=_format_flag_url(player.flag_name),
                         country=player.flag_name or "-",
-                        position=", ".join(positions) if positions else "Player",
+                        position=position,
                         join_date=_format_date(player.join_date),
                         inactive_date=_format_date(player.inactive_date),
                         leave_date=_format_date(player.leave_date),
@@ -111,6 +106,16 @@ def _format_date(val: date | None) -> str:
     if not val:
         return "-"
     return val.strftime("%-d %b %Y")
+
+
+def _format_player_position(player: RosterPlayer) -> str:
+    positions = []
+    position_field = (player.position or "").lower()
+    if player.is_captain:
+        positions.append("Captain")
+    if "coach" in position_field:
+        positions.append("Coach")
+    return ", ".join(positions) if positions else "Player"
 
 
 def _choose_game_version(game_versions: list[str]) -> str:
@@ -141,6 +146,12 @@ def _format_game_version(val: str | None) -> str:
     return val
 
 
+def _format_flag_url(flag_name: str | None) -> str:
+    if not flag_name:
+        return "-"
+    return f"/img/f/{slugify(flag_name)}.svg"
+
+
 @dataclass
 class MainPageDTO:
     search_items: list[str]
@@ -153,3 +164,56 @@ class MainPagePresenter:
     def present(self) -> MainPageDTO:
         team_names = self._rosters_storage.get_team_names()
         return MainPageDTO(search_items=sorted(team_names))
+
+
+@dataclass
+class PlayerTeamDTO:
+    team_id: str
+    position: str
+    join_date: str
+    inactive_date: str
+    leave_date: str
+    team_page_url: str
+
+
+@dataclass
+class PlayerPageDTO:
+    player_nickname: str
+    country: str
+    flag_url: str
+    liquipedia_url: str | None
+    teams: list[PlayerTeamDTO]
+
+
+class PlayerPagePresenter:
+    def __init__(self, *, rosters_storage: RosterStorage) -> None:
+        self._rosters_storage = rosters_storage
+
+    def present(self, player_id: str) -> PlayerPageDTO | None:
+        player = self._rosters_storage.get_player(player_id)
+        if not player:
+            return None
+
+        return PlayerPageDTO(
+            player_nickname=player[-1].nickname,
+            country=player[-1].flag_name or "-",
+            flag_url=_format_flag_url(player[-1].flag_name),
+            liquipedia_url=player[-1].liquipedia_url,
+            teams=self._prepare_teams(player),
+        )
+
+    def _prepare_teams(self, player: list[RosterPlayer]) -> list[PlayerTeamDTO]:
+        teams = []
+        player.sort(key=lambda x: x.join_date)
+        for item in player:
+            teams.append(
+                PlayerTeamDTO(
+                    team_id=item.team_id,
+                    position=_format_player_position(item),
+                    join_date=_format_date(item.join_date),
+                    inactive_date=_format_date(item.inactive_date),
+                    leave_date=_format_date(item.leave_date),
+                    team_page_url=f"/teams/{slugify(item.team_id)}/",
+                )
+            )
+        return teams

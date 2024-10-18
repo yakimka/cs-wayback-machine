@@ -31,7 +31,7 @@ class RosterStorage:
         self, team_id: str, date_from: date, date_to: date
     ) -> list[RosterPlayer]:
         query = """
-        SELECT team_id, game_version, player_id, name, liquipedia_url,
+        SELECT player_full_id, team_id, game_version, player_id, name, liquipedia_url,
             is_captain, position, flag_name, flag_url, join_date, inactive_date,
             leave_date
         FROM rosters
@@ -50,6 +50,20 @@ class RosterStorage:
                 "end_date": date_to,
             },
         )
+        players = []
+        for row in statement.fetchall():
+            players.append(RosterPlayer(*row))
+        return players
+
+    def get_player(self, player_id: str) -> list[RosterPlayer]:
+        query = """
+        SELECT player_full_id, team_id, game_version, player_id, name, liquipedia_url,
+            is_captain, position, flag_name, flag_url, join_date, inactive_date,
+            leave_date
+        FROM rosters
+        WHERE player_full_id = $player_id;
+        """
+        statement = self._conn.execute(query, parameters={"player_id": player_id})
         players = []
         for row in statement.fetchall():
             players.append(RosterPlayer(*row))
@@ -78,10 +92,10 @@ def load_duck_db_database(parsed_rosters: Path) -> duckdb.DuckDBPyConnection:
     conn.execute(
         """
         CREATE TABLE rosters (
+            player_full_id TEXT,
             team_id TEXT REFERENCES teams(full_name),
             game_version TEXT,
             player_id TEXT NOT NULL,
-            player_full_id TEXT,
             name TEXT,
             liquipedia_url TEXT,
             is_captain BOOLEAN NOT NULL,
@@ -106,10 +120,10 @@ def load_duck_db_database(parsed_rosters: Path) -> duckdb.DuckDBPyConnection:
     conn.execute(
         """
     INSERT INTO rosters (
-        team_id, game_version, player_id, player_full_id, name, liquipedia_url,
+        player_full_id, team_id, game_version, player_id, name, liquipedia_url,
         is_captain, position, flag_name, flag_url, join_date, inactive_date, leave_date
     )
-    SELECT team_full_name, game_version, player_id, player_full_id, full_name,
+    SELECT player_full_id, team_full_name, game_version, player_id, full_name,
         player_url, is_captain, position, flag_name, flag_url, join_date, inactive_date,
         leave_date
     FROM rosters_rel

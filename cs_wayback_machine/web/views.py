@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from urllib.parse import quote
 
 from picodi import Provide, inject
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 
 from cs_wayback_machine.web.deps import get_rosters_storage
 from cs_wayback_machine.web.html_render import render_404, render_html
-from cs_wayback_machine.web.presenters import MainPagePresenter, TeamRostersPresenter
+from cs_wayback_machine.web.presenters import (
+    MainPagePresenter,
+    PlayerPagePresenter,
+    TeamRostersPresenter,
+)
 from cs_wayback_machine.web.slugify import slugify
 
 if TYPE_CHECKING:
@@ -33,7 +36,7 @@ def goto_view(request: Request) -> Response:
     if not query:
         return RedirectResponse(url="/")
 
-    slug = quote(slugify(query), safe="/()")
+    slug = slugify(query)
     return RedirectResponse(url=f"/teams/{slug}/")
 
 
@@ -47,6 +50,19 @@ def team_detail_view(
     if result is None:
         return HTMLResponse(content=render_404(), status_code=404)
     html = render_html("team_detail.jinja2", result)
+    return HTMLResponse(html)
+
+
+@inject
+def player_detail_view(
+    request: Request, rosters_storage: RosterStorage = Provide(get_rosters_storage)
+) -> Response:
+    player_id = slugify.reverse(request.path_params["player_id"])
+    presenter = PlayerPagePresenter(rosters_storage=rosters_storage)
+    result = presenter.present(player_id)
+    if result is None:
+        return HTMLResponse(content=render_404(), status_code=404)
+    html = render_html("player_detail.jinja2", result)
     return HTMLResponse(html)
 
 
