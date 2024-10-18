@@ -12,10 +12,14 @@ class Event:
     player: RosterPlayer
 
 
-def create_rosters(players: list[RosterPlayer]) -> list[Roster]:
+def create_rosters(players: list[RosterPlayer]) -> list[Roster]:  # noqa: C901
     # Collect events
     events_by_date: dict[date, list[Event]] = {}
+    invalid_players = []
     for player in players:
+        if not player.has_valid_dates():
+            invalid_players.append(player)
+            continue
         start_event_date = player.active_period.start
         end_event_date = player.active_period.end
         start_event = Event(date=start_event_date, action="start", player=player)
@@ -30,6 +34,8 @@ def create_rosters(players: list[RosterPlayer]) -> list[Roster]:
     previous_active_players: set[RosterPlayer] | None = None
     current_period_start: date | None = None
     rosters = []
+    if invalid_players:
+        rosters.append(Roster(players=invalid_players, active_period=DateRange.never()))
 
     for event_date in sorted_dates:
         events = events_by_date[event_date]

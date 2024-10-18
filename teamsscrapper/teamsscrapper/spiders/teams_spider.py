@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from datetime import date
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote
 
@@ -85,7 +86,7 @@ class TeamsSpider(scrapy.Spider):
                     **extracted_dates,
                 }
 
-    def _extract_dates(self, node: Response) -> dict[str, str]:
+    def _extract_dates(self, node: Response) -> dict[str, str | None]:  # noqa: C901
         dates = node.css("td.Date")
         dates_parsed = {}
         for date_el in dates:
@@ -101,7 +102,15 @@ class TeamsSpider(scrapy.Spider):
         raw_dates = {}
         for date_type, value in dates_parsed.items():
             if value is not None:
-                raw_dates[f"{date_type}_raw"] = value
+                value = value.strip()[:10]
+                raw_dates[f"{date_type}_raw"] = ""
+                try:
+                    date.fromisoformat(value)
+                    dates_parsed[date_type] = value
+                    continue
+                except ValueError:
+                    raw_dates[f"{date_type}_raw"] = value
+
                 if "?" in value[:4] or value == "-":
                     dates_parsed[date_type] = None
                     continue
@@ -111,7 +120,7 @@ class TeamsSpider(scrapy.Spider):
                 value = value.replace("?", "").replace("X", "").rstrip("-")
                 if len(value) < 4:
                     continue
-                parts = value[:10].split("-")
+                parts = value.split("-")
                 if "leave" in date_type or "inactive" in date_type:
                     parts.extend(["12", "31"])
                 else:

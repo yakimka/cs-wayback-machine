@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import TYPE_CHECKING
 
+from cs_wayback_machine.date_util import DateRange
 from cs_wayback_machine.roster import create_rosters
 from cs_wayback_machine.web.slugify import slugify
 
@@ -26,6 +27,9 @@ class PlayerDTO:
     join_date: str
     inactive_date: str
     leave_date: str
+    join_date_raw: str
+    inactive_date_raw: str
+    leave_date_raw: str
 
 
 @dataclass
@@ -85,8 +89,21 @@ class TeamRostersPresenter:
                         join_date=_format_date(player.join_date),
                         inactive_date=_format_date(player.inactive_date),
                         leave_date=_format_date(player.leave_date),
+                        join_date_raw=player.join_date_raw or "",
+                        inactive_date_raw=player.inactive_date_raw or "",
+                        leave_date_raw=player.leave_date_raw or "",
                     )
                 )
+            if roster.active_period == DateRange.never():
+                result.append(
+                    RosterDTO(
+                        period="Entries with invalid dates",
+                        game_version="-",
+                        players=players,
+                    )
+                )
+                continue
+
             period_start = roster.active_period.start
             period_end = roster.active_period.end
             if (period_end - period_start).days < self._skip_if_period_less_than:
@@ -176,6 +193,9 @@ class PlayerTeamDTO:
     join_date: str
     inactive_date: str
     leave_date: str
+    join_date_raw: str
+    inactive_date_raw: str
+    leave_date_raw: str
     team_page_url: str
 
 
@@ -207,7 +227,7 @@ class PlayerPagePresenter:
 
     def _prepare_teams(self, player: list[RosterPlayer]) -> list[PlayerTeamDTO]:
         teams = []
-        player.sort(key=lambda x: x.join_date)
+        player.sort(key=lambda x: x.active_period.start)
         for item in player:
             teams.append(
                 PlayerTeamDTO(
@@ -216,6 +236,9 @@ class PlayerPagePresenter:
                     join_date=_format_date(item.join_date),
                     inactive_date=_format_date(item.inactive_date),
                     leave_date=_format_date(item.leave_date),
+                    join_date_raw=item.join_date_raw or "",
+                    inactive_date_raw=item.inactive_date_raw or "",
+                    leave_date_raw=item.leave_date_raw or "",
                     team_page_url=f"/teams/{slugify(item.team_id)}/",
                 )
             )
