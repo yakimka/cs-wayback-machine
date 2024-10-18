@@ -12,7 +12,7 @@
                         id="search"
                         type="search"
                         name="q"
-                        placeholder="Type a CS team name, for example: Natus Vincere"
+                        placeholder="Type a CS team or player name, for example: Natus Vincere"
                         aria-label="Search"
                         class="awesomplete"
                         list="mylist"
@@ -29,6 +29,7 @@
             let input = document.getElementById("search");
             new Awesomplete(input, {
                 minChars: 1,
+                maxItems: 100,
                 autoFirst: true,
                 tabSelect: true,
             });

@@ -162,8 +162,11 @@ class MainPagePresenter:
         self._rosters_storage = rosters_storage
 
     def present(self) -> MainPageDTO:
-        team_names = self._rosters_storage.get_team_names()
-        return MainPageDTO(search_items=sorted(team_names))
+        team_names = sorted(self._rosters_storage.get_team_names())
+        team_names = [f"team:{item}" for item in team_names if item]
+        player_names = sorted(self._rosters_storage.get_player_names())
+        player_names = [f"player:{item}" for item in player_names if item]
+        return MainPageDTO(search_items=team_names + player_names)
 
 
 @dataclass

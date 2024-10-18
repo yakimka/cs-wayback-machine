@@ -36,8 +36,14 @@ def goto_view(request: Request) -> Response:
     if not query:
         return RedirectResponse(url="/")
 
-    slug = slugify(query)
-    return RedirectResponse(url=f"/teams/{slug}/")
+    url_template = "/teams/{slug}/"
+    value = query.removeprefix("team:")
+    if query.startswith("player:"):
+        url_template = "/players/{slug}/"
+        value = query.removeprefix("player:")
+
+    slug = slugify(value)
+    return RedirectResponse(url=url_template.format(slug=slug))
 
 
 @inject
