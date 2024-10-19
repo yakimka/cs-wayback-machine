@@ -7,7 +7,15 @@
     <link rel="stylesheet" href="/pico.min.css">
     <link rel="stylesheet" href="/style.css">
     {% block in_head %}{% endblock %}
-    <title>{% block title %}{% endblock %}</title>
+    <title>{{ page_title }} | Counter Strike Wayback Machine</title>
+    <meta name="title" content="{{ page_title }} | Counter Strike Wayback Machine"/>
+    <meta name="description" content="Service for Viewing Historical Data on Counter-Strike Players and Teams"/>
+    <meta property="og:title" content="{{ page_title }} | Counter Strike Wayback Machine"/>
+    <meta property="og:description" content="Service for Viewing Historical Data on Counter-Strike Players and Teams "/>
+    <meta property="og:image" content="https://cs-wayback-machine.yakimka.me/android-chrome-512x512.png"/>
+    <meta property="twitter:title" content="{{ page_title }} | Counter Strike Wayback Machine"/>
+    <meta property="twitter:description" content="Service for Viewing Historical Data on Counter-Strike Players and Teams "/>
+    <meta property="twitter:image" content="https://cs-wayback-machine.yakimka.me/android-chrome-512x512.png"/>
 </head>
 <body hx-indicator="#head-indicator">
 {%  include "header.jinja2" %}

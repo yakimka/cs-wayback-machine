@@ -164,4 +164,4 @@ jobs:
       - name: Update service
         run: |
           sleep 30
-          curl ${{ secrets.UPDATE_URL }}
+          curl ${{ secrets.UPDATE_URL }} || curl ${{ secrets.UPDATE_URL }}
