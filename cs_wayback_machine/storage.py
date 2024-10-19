@@ -86,7 +86,7 @@ class RosterStorage:
         JOIN rosters AS tm
             ON player.team_id = tm.team_id
             AND player.player_full_id <> tm.player_full_id
-            AND GREATEST(tm.join_date, player.join_date) <= LEAST(
+            AND GREATEST(tm.join_date, player.join_date) < LEAST(
                     COALESCE(tm.inactive_date, CURRENT_DATE),
                     COALESCE(player.inactive_date, CURRENT_DATE),
                     COALESCE(tm.leave_date, CURRENT_DATE),
@@ -264,7 +264,7 @@ class StatisticsCalculator:
             JOIN rosters AS tm
                 ON player.team_id = tm.team_id
                 AND player.player_full_id <> tm.player_full_id
-                AND GREATEST(tm.join_date, player.join_date) <= LEAST(
+                AND GREATEST(tm.join_date, player.join_date) < LEAST(
                         COALESCE(tm.inactive_date, CURRENT_DATE),
                         COALESCE(player.inactive_date, CURRENT_DATE),
                         COALESCE(tm.leave_date, CURRENT_DATE),

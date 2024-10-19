@@ -126,7 +126,7 @@ def _format_date(val: date | None) -> str:
         return "-"
     if val == date.min:
         return "Unknown"
-    if val == date.max:
+    if val in (date.max, date.today()):
         return "Present"
     return val.strftime("%-d %b %Y")
 
@@ -348,15 +348,20 @@ class PlayerPagePresenter:
     def _prepare_teammates(
         self, teammates: list[tuple[RosterPlayer, DateRange]]
     ) -> list[TeammateDTO]:
-        teammates.sort(key=lambda x: x[1].start)
+        teammates.sort(key=lambda x: (x[1].days, x[1].start), reverse=True)
         results = []
         for mate, period in teammates:
+            if period.days < 3:
+                break
             results.append(
                 TeammateDTO(
                     player_id=mate.player_id,
                     nickname=mate.nickname,
                     team_id=mate.team_id,
-                    period=f"{_format_date(period.start)} - {_format_date(period.end)}",
+                    period=(
+                        f"{_format_date(period.start)} - {_format_date(period.end)} "
+                        f"({period.days} days)"
+                    ),
                 )
             )
         return results
