@@ -24,7 +24,7 @@ def get_settings() -> Settings:
 
 @inject
 def get_parser_result_file_path(settings: Settings = Provide(get_settings)) -> Path:
-    return settings.parser_result_file_path
+    return settings.parser_results_path / "rosters.jsonlines"
 
 
 @dependency(scope_class=SingletonScope, use_init_hook=True)

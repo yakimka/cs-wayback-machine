@@ -65,6 +65,10 @@ clean-all:  ## Clean up all
 	rm -rf .mypy_cache
 	rm -rf .pytest_cache
 
+.PHONY: run-command
+run-command:  ## Run bash
+	$(RUN) poetry run python -m cs_wayback_machine.cli $(args)
+
 .PHONY: bash
 bash:  ## Run bash
 	$(RUN) bash $(args)

@@ -1,6 +1,6 @@
 default:
   email_for_scrapper_useragent: "me@example.com"
-  parser_result_file_path: "rosters.jsonlines"
+  parser_results_path: ""
 
 testing:
   email_for_scrapper_useragent: "me@example.com"

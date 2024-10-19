@@ -19,16 +19,16 @@ settings = Dynaconf(
 @dataclass
 class Settings:
     email_for_scrapper_useragent: str
-    parser_result_file_path: Path
+    parser_results_path: Path
 
     @classmethod
     def create_from_config(cls) -> Settings:
-        parser_result_file_path = settings.parser_result_file_path
-        if parser_result_file_path is None:
-            raise ValueError("parser_result_file_path is not set in the config")
-        if not parser_result_file_path.startswith("/"):
-            parser_result_file_path = BASE_DIR / parser_result_file_path
+        parser_results_path = settings.parser_results_path
+        if parser_results_path is None:
+            raise ValueError("parser_results_path is not set in the config")
+        if not parser_results_path.startswith("/"):
+            parser_results_path = BASE_DIR / parser_results_path
         return cls(
             email_for_scrapper_useragent=settings.email_for_scrapper_useragent,
-            parser_result_file_path=Path(parser_result_file_path),
+            parser_results_path=Path(parser_results_path),
         )
