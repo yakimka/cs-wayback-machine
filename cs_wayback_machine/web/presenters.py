@@ -331,18 +331,18 @@ class PlayerPagePresenter:
         teams = []
         player.sort(key=lambda x: x.active_period.start)
         for item in player:
-            teams.append(
-                PlayerTeamDTO(
-                    team_id=item.team_id,
-                    position=_format_player_position(item),
-                    join_date=_format_date(item.join_date),
-                    inactive_date=_format_date(item.inactive_date),
-                    leave_date=_format_date(item.leave_date),
-                    join_date_raw=item.join_date_raw or "",
-                    inactive_date_raw=item.inactive_date_raw or "",
-                    leave_date_raw=item.leave_date_raw or "",
-                )
+            team = PlayerTeamDTO(
+                team_id=item.team_id,
+                position=_format_player_position(item),
+                join_date=_format_date(item.join_date),
+                inactive_date=_format_date(item.inactive_date),
+                leave_date=_format_date(item.leave_date),
+                join_date_raw=item.join_date_raw or "",
+                inactive_date_raw=item.inactive_date_raw or "",
+                leave_date_raw=item.leave_date_raw or "",
             )
+            if team not in teams:
+                teams.append(team)
         return teams
 
     def _prepare_teammates(

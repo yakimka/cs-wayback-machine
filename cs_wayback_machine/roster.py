@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -49,7 +50,8 @@ def create_rosters(players: list[RosterPlayer]) -> list[Roster]:  # noqa: C901
             if event.action == "start":
                 active_players.add(event.player)
             elif event.action == "end":
-                active_players.remove(event.player)
+                with suppress(KeyError):
+                    active_players.remove(event.player)
 
         # After processing events, check if active_players changed
         if active_players != previous_active_players:

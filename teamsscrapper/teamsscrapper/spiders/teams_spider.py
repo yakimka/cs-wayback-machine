@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from datetime import date
 from typing import TYPE_CHECKING, Any
-from urllib.parse import unquote
+from urllib.parse import parse_qs, unquote, urlparse
 
 import scrapy
 
@@ -76,7 +76,7 @@ class TeamsSpider(scrapy.Spider):
                     "card_id": card_id,
                     "player_id": player_id,
                     "player_url": player_url,
-                    "player_full_id": self._clean_text(player_slug) or player_id,
+                    "player_full_id": self._clean_text(player_slug or player_id),
                     "player_slug": player_slug,
                     "position": position or None,
                     "is_captain": row.css('td.ID i[title="Captain"]').get() is not None,
@@ -100,14 +100,18 @@ class TeamsSpider(scrapy.Spider):
             date_value = date_el.css("i::text").get("").strip()
             if not date_value:
                 date_value = date_el.css("i abbr::text").get("").strip()
-            empty_value = None
-            if "leave" in date_type.lower():
-                empty_value = "unknown"
-            dates_parsed[date_type] = date_value or empty_value
+            dates_parsed[date_type] = date_value or None
+            if "leave" in date_type.lower() and not date_value:
+                dates_parsed[date_type] = "unknown"
 
         raw_dates: dict[str, str | None] = {}
         for date_type, value in dates_parsed.items():
-            if value is not None and value != "unknown":
+            if value is not None:
+                if value == "unknown":
+                    dates_parsed[date_type] = None
+                    raw_dates[f"{date_type}_raw"] = value
+                    continue
+
                 value = value.strip()[:10]
                 raw_dates[f"{date_type}_raw"] = ""
                 try:
@@ -154,8 +158,11 @@ class TeamsSpider(scrapy.Spider):
         return parent_div.css("a ::text").getall()
 
     def _extract_name_from_url(self, url: str) -> str | None:
-        if not url or "action=edit" in url:
+        if not url:
             return None
+        if "action=edit" in url:
+            parsed_url = urlparse(url)
+            return parse_qs(parsed_url.query)["title"][0]
         return url.split("/")[-1].replace("_", " ")
 
     def _clean_text(self, text: str) -> str:
