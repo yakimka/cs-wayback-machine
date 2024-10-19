@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from picodi import Provide, inject
-from starlette.responses import HTMLResponse, RedirectResponse, Response
+from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
 from cs_wayback_machine.web.deps import get_rosters_storage, get_statistics_calculator
 from cs_wayback_machine.web.html_render import render_404, render_html
@@ -11,6 +11,7 @@ from cs_wayback_machine.web.presenters import (
     MainPagePresenter,
     PlayerPagePresenter,
     TeamRostersPresenter,
+    present_available_ids,
 )
 from cs_wayback_machine.web.slugify import slugify
 
@@ -47,6 +48,15 @@ def goto_view(request: Request) -> Response:
 
     slug = slugify(value)
     return RedirectResponse(url=url_template.format(slug=slug))
+
+
+@inject
+def entities_view(
+    request: Request,  # noqa: U100
+    rosters_storage: RosterStorage = Provide(get_rosters_storage),
+) -> Response:
+    result = present_available_ids(rosters_storage)
+    return JSONResponse(result)
 
 
 @inject

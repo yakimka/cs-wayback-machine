@@ -195,6 +195,14 @@ class MainPageDTO:
     statistics: list[TableDTO]
 
 
+def present_available_ids(rosters_storage: RosterStorage) -> list[str]:
+    team_names = sorted(rosters_storage.get_team_names())
+    player_names = sorted(rosters_storage.get_player_names())
+    return [f"team:{item}" for item in team_names if item] + [
+        f"player:{item}" for item in player_names if item
+    ]
+
+
 class MainPagePresenter:
     def __init__(
         self,
@@ -206,13 +214,9 @@ class MainPagePresenter:
         self._statistics_calculator = statistics_calculator
 
     def present(self) -> MainPageDTO:
-        self._rosters_storage.get_teammates("Karrigan")
-        team_names = sorted(self._rosters_storage.get_team_names())
-        team_names = [f"team:{item}" for item in team_names if item]
-        player_names = sorted(self._rosters_storage.get_player_names())
-        player_names = [f"player:{item}" for item in player_names if item]
         return MainPageDTO(
-            search_items=team_names + player_names, statistics=self._build_statistics()
+            search_items=present_available_ids(self._rosters_storage),
+            statistics=self._build_statistics(),
         )
 
     def _build_statistics(self) -> list[TableDTO]:
