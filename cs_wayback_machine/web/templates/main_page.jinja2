@@ -37,7 +37,7 @@
                 document.getElementById("search-form").submit();
             });
         </script>
-        <section style="margin-top: 150px;">
+        <section class="overflow-auto" style="margin-top: 150px;">
             <h2>Statistics</h2>
             <div class="grid-statistics">
                 {% for table in data.statistics %}
@@ -57,13 +57,15 @@
                                 <td>{{ loop.index }}</td>
                                 {% for cell in row %}
                                     <td>
-                                    {% if cell.is_team_id %}
-                                        <a class="contrast" href="{{ team_link(cell.value) }}">{{ cell.value }}</a>
-                                    {% elif cell.is_player_id %}
-                                        <a class="contrast" href="{{ player_link(cell.value) }}">{{ cell.value }}</a>
-                                    {% else %}
-                                        {{ cell.value }}
-                                    {% endif %}
+                                        {% if cell.is_team_id %}
+                                            <a class="contrast"
+                                               href="{{ team_link(cell.value) }}">{{ cell.value }}</a>
+                                        {% elif cell.is_player_id %}
+                                            <a class="contrast"
+                                               href="{{ player_link(cell.value) }}">{{ cell.value }}</a>
+                                        {% else %}
+                                            {{ cell.value }}
+                                        {% endif %}
                                     </td>
                                 {% endfor %}
                             </tr>
