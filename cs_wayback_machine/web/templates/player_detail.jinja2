@@ -22,8 +22,9 @@
               <tr>
                 <th>#</th>
                 <th>Teammate</th>
-                <th>Team</th>
-                <th>Period</th>
+                <th>Teams</th>
+                <th>Periods</th>
+                <th>Total Days</th>
               </tr>
             </thead>
             <tbody>
@@ -31,8 +32,21 @@
                 <tr>
                   <td>{{ loop.index }}</td>
                   <td><a class="contrast" href="{{ player_link(teammate.player_id) }}">{{ teammate.nickname }}</a></td>
-                  <td><a class="contrast" href="{{ team_link(teammate.team_id) }}">{{ teammate.team_id }}</a></td>
-                  <td>{{ teammate.period }}</td>
+                  <td>
+                        <ul>
+                      {% for team_id in teammate.team_ids %}
+                      <li><a class="contrast" href="{{ team_link(team_id) }}">{{ team_id }}</a></li>
+                      {% endfor %}
+                        </ul>
+                  </td>
+                  <td>
+                      <ul>
+                      {% for period in teammate.periods %}
+                      <li>{{ period }}</li>
+                      {% endfor %}
+                    </ul>
+                  </td>
+                <td>{{ teammate.total_days }}</td>
                 </tr>
               {% endfor %}
             </tbody>

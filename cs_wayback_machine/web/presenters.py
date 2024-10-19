@@ -297,8 +297,9 @@ class PlayerTeamDTO:
 class TeammateDTO:
     player_id: str
     nickname: str
-    team_id: str
-    period: str
+    team_ids: list[str]
+    periods: list[str]
+    total_days: int
 
 
 @dataclass
@@ -352,20 +353,35 @@ class PlayerPagePresenter:
     def _prepare_teammates(
         self, teammates: list[tuple[RosterPlayer, DateRange]]
     ) -> list[TeammateDTO]:
-        teammates.sort(key=lambda x: (x[1].days, x[1].start), reverse=True)
-        results = []
+        teammates.sort(key=lambda x: x[1].start)
+        teammate_id_map: dict[str, list[tuple[RosterPlayer, DateRange]]] = {}
+        teammate_id_to_nicknames = {}
         for mate, period in teammates:
             if period.days < 3:
-                break
+                continue
+            teammate_id_map.setdefault(mate.player_id, []).append((mate, period))
+            teammate_id_to_nicknames[mate.player_id] = mate.nickname
+
+        results = []
+        for mate_id, items in teammate_id_map.items():
+            team_ids = []
+            periods = []
+            total_days = 0
+            for mate, period in items:
+                team_ids.append(mate.team_id)
+                periods.append(
+                    f"{_format_date(period.start)} - {_format_date(period.end)} "
+                    f"({period.days} days)"
+                )
+                total_days += period.days
             results.append(
                 TeammateDTO(
-                    player_id=mate.player_id,
-                    nickname=mate.nickname,
-                    team_id=mate.team_id,
-                    period=(
-                        f"{_format_date(period.start)} - {_format_date(period.end)} "
-                        f"({period.days} days)"
-                    ),
+                    player_id=mate_id,
+                    nickname=teammate_id_to_nicknames[mate_id],
+                    team_ids=team_ids,
+                    periods=periods,
+                    total_days=total_days,
                 )
             )
+        results.sort(key=lambda x: x.total_days, reverse=True)
         return results
