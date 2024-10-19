@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 @contextlib.asynccontextmanager
-async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:  # noqa: U100
+async def lifespan(app: Starlette) -> AsyncGenerator[None]:  # noqa: U100
     await picodi.init_dependencies()
     try:
         yield
