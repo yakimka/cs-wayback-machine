@@ -1,19 +1,30 @@
-import os
-from pathlib import Path
+from __future__ import annotations
 
-import duckdb
+from typing import TYPE_CHECKING
+
 from picodi import Provide, SingletonScope, dependency, inject
 
+from cs_wayback_machine.settings import Settings
 from cs_wayback_machine.storage import (
     RosterStorage,
     StatisticsCalculator,
     load_duck_db_database,
 )
-from cs_wayback_machine.web import ROOT_DIR
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    import duckdb
 
 
-def get_parser_result_file_path() -> Path:
-    return Path(os.getenv("PARSER_RESULT_FILE", ROOT_DIR / "../rosters.jsonlines"))
+@dependency(scope_class=SingletonScope, use_init_hook=True)
+def get_settings() -> Settings:
+    return Settings.create_from_config()
+
+
+@inject
+def get_parser_result_file_path(settings: Settings = Provide(get_settings)) -> Path:
+    return settings.parser_result_file_path
 
 
 @dependency(scope_class=SingletonScope, use_init_hook=True)
