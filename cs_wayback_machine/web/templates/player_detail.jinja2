@@ -5,67 +5,79 @@
         <div role="group">
             <h1>
                 <img src="{{ data.flag_url }}"
-                 alt="{{ data.country }} flag"
-                 width="32px"
-                 title="{{ data.country }}"
-                 class="flag">
+                     alt="{{ data.country }} flag"
+                     width="32px"
+                     title="{{ data.country }}"
+                     class="flag">
                 {{ data.player_nickname }}
                 {% if data.liquipedia_url %}
-                <sup><a class="secondary extra-small" href="{{ data.liquipedia_url }}">liquipedia</a></sup>
+                    <sup><a class="secondary extra-small" href="{{ data.liquipedia_url }}">liquipedia</a></sup>
                 {% endif %}
             </h1>
         </div>
         <details>
-          <summary>List of Teammates</summary>
-          <table class="striped">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Teammate</th>
-                <th>Teams</th>
-                <th>Periods</th>
-                <th>Total Days</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for teammate in data.teammates %}
-                <tr>
-                  <td>{{ loop.index }}</td>
-                  <td><a class="contrast" href="{{ player_link(teammate.player_id) }}">{{ teammate.nickname }}</a></td>
-                  <td>
-                        <ul>
-                      {% for team_id in teammate.team_ids %}
-                      <li><a class="contrast" href="{{ team_link(team_id) }}">{{ team_id }}</a></li>
-                      {% endfor %}
-                        </ul>
-                  </td>
-                  <td>
-                      <ul>
-                      {% for period in teammate.periods %}
-                      <li>{{ period }}</li>
-                      {% endfor %}
-                    </ul>
-                  </td>
-                <td>{{ teammate.total_days }}</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+            <summary>List of Teammates</summary>
+            <div class="overflow-auto">
+                <table class="striped">
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Teammate</th>
+                        <th>Teams</th>
+                        <th>Periods</th>
+                        <th>Total Days</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for teammate in data.teammates %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td><a class="contrast"
+                                   href="{{ player_link(teammate.player_id) }}">{{ teammate.nickname }}</a>
+                            </td>
+                            <td>
+                                <ul>
+                                    {% for team_id in teammate.team_ids %}
+                                        <li><a class="contrast"
+                                               href="{{ team_link(team_id) }}">{{ team_id }}</a>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </td>
+                            <td>
+                                <ul>
+                                    {% for period in teammate.periods %}
+                                        <li>{{ period }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </td>
+                            <td>{{ teammate.total_days }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </details>
         <details open>
-          <summary>List of Teams</summary>
-          <div class="grid-4x">
-            {% for team in data.teams %}
-                <article>
-                    <header>{{ team.team_id }}</header>
-                    <p><small>Position: {{ team.position }}</small></p>
-                    <p><small>Join Date: {{ player_date(team.join_date, team.join_date_raw) }}</small></p>
-                    <p><small>Inactive Date: {{ player_date(team.inactive_date, team.inactive_date_raw) }}</small></p>
-                    <p><small>Leave Date: {{ player_date(team.leave_date, team.leave_date_raw) }}</small></p>
-                    <p><a class="contrast" href="{{ team_link(team.team_id) }}">Go to Team Page</a></p>
-                </article>
-            {% endfor %}
-        </div>
+            <summary>List of Teams</summary>
+            <div class="grid-4x">
+                {% for team in data.teams %}
+                    <article>
+                        <header>{{ team.team_id }}</header>
+                        <p><small>Position: {{ team.position }}</small></p>
+                        <p><small>Join
+                            Date: {{ player_date(team.join_date, team.join_date_raw) }}</small></p>
+                        <p><small>Inactive
+                            Date: {{ player_date(team.inactive_date, team.inactive_date_raw) }}</small>
+                        </p>
+                        <p><small>Leave
+                            Date: {{ player_date(team.leave_date, team.leave_date_raw) }}</small>
+                        </p>
+                        <p><a class="contrast" href="{{ team_link(team.team_id) }}">Go to Team
+                            Page</a></p>
+                    </article>
+                {% endfor %}
+            </div>
         </details>
     </main>
 {% endblock %}

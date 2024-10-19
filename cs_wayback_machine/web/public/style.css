@@ -111,10 +111,28 @@ body > header .dropdown summary {
 
 .grid-statistics {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* Two equal-width columns */
-    grid-auto-rows: auto; /* Auto-size rows */
-    grid-auto-flow: dense; /* Allows items to fill gaps */
-    grid-gap: var(--pico-grid-column-gap) var(--pico-grid-row-gap); /* Define column and row gaps */
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: auto;
+    grid-auto-flow: dense;
+    grid-gap: var(--pico-grid-column-gap) var(--pico-grid-row-gap);
+}
+
+@media (max-width: 1024px) {
+    .grid-4x {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .grid-statistics {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 576px) {
+    .grid-4x {
+        grid-template-columns: 1fr;
+    }
 }
 
 .flag {
