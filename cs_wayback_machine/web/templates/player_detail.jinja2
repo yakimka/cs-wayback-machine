@@ -2,20 +2,45 @@
 {% block title %}{{ data.player_nickname }}{% endblock %}
 {% block body %}
     <main class="container">
-    <div role="group">
-        <h1>
-            <img src="{{ data.flag_url }}"
-             alt="{{ data.country }} flag"
-             width="32px"
-             title="{{ data.country }}"
-             class="flag">
-            {{ data.player_nickname }}
-            {% if data.liquipedia_url %}
-            <sup><a class="secondary extra-small" href="{{ data.liquipedia_url }}">liquipedia</a></sup>
-            {% endif %}
-        </h1>
-    </div>
-        <div class="grid-4x">
+        <div role="group">
+            <h1>
+                <img src="{{ data.flag_url }}"
+                 alt="{{ data.country }} flag"
+                 width="32px"
+                 title="{{ data.country }}"
+                 class="flag">
+                {{ data.player_nickname }}
+                {% if data.liquipedia_url %}
+                <sup><a class="secondary extra-small" href="{{ data.liquipedia_url }}">liquipedia</a></sup>
+                {% endif %}
+            </h1>
+        </div>
+        <details>
+          <summary>List of Teammates</summary>
+          <table class="striped">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Teammate</th>
+                <th>Team</th>
+                <th>Period</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for teammate in data.teammates %}
+                <tr>
+                  <td>{{ loop.index }}</td>
+                  <td><a class="contrast" href="{{ player_link(teammate.player_id) }}">{{ teammate.nickname }}</a></td>
+                  <td><a class="contrast" href="{{ team_link(teammate.team_id) }}">{{ teammate.team_id }}</a></td>
+                  <td>{{ teammate.period }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </details>
+        <details open>
+          <summary>List of Teams</summary>
+          <div class="grid-4x">
             {% for team in data.teams %}
                 <article>
                     <header>{{ team.team_id }}</header>
@@ -27,5 +52,6 @@
                 </article>
             {% endfor %}
         </div>
+        </details>
     </main>
 {% endblock %}

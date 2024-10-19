@@ -126,7 +126,7 @@ def _format_date(val: date | None) -> str:
         return "-"
     if val == date.min:
         return "Unknown"
-    if val == date.max:
+    if val in (date.max, date.today()):
         return "Present"
     return val.strftime("%-d %b %Y")
 
@@ -206,6 +206,7 @@ class MainPagePresenter:
         self._statistics_calculator = statistics_calculator
 
     def present(self) -> MainPageDTO:
+        self._rosters_storage.get_teammates("Karrigan")
         team_names = sorted(self._rosters_storage.get_team_names())
         team_names = [f"team:{item}" for item in team_names if item]
         player_names = sorted(self._rosters_storage.get_player_names())
@@ -241,14 +242,14 @@ class MainPagePresenter:
                 ],
             ),
             TableDTO(
-                title="TOP10 Countries by active players",
-                headers=["Country", "Number of active players"],
+                title="TOP10 Players with most teammates",
+                headers=["Player", "Number of teammates"],
                 rows=[
                     [
-                        RowValueDTO(item[0]),
+                        RowValueDTO(item[0], is_player_id=True),
                         RowValueDTO(str(item[1])),
                     ]
-                    for item in calc.active_players_by_country(limit=10)
+                    for item in calc.players_with_most_teammates(limit=10)
                 ],
             ),
             TableDTO(
@@ -260,6 +261,17 @@ class MainPagePresenter:
                         RowValueDTO(str(item[1])),
                     ]
                     for item in calc.teams_with_most_players(limit=10)
+                ],
+            ),
+            TableDTO(
+                title="TOP10 Countries by active players",
+                headers=["Country", "Number of active players"],
+                rows=[
+                    [
+                        RowValueDTO(item[0]),
+                        RowValueDTO(str(item[1])),
+                    ]
+                    for item in calc.active_players_by_country(limit=10)
                 ],
             ),
         ]
@@ -278,12 +290,21 @@ class PlayerTeamDTO:
 
 
 @dataclass
+class TeammateDTO:
+    player_id: str
+    nickname: str
+    team_id: str
+    period: str
+
+
+@dataclass
 class PlayerPageDTO:
     player_nickname: str
     country: str
     flag_url: str
     liquipedia_url: str | None
     teams: list[PlayerTeamDTO]
+    teammates: list[TeammateDTO]
 
 
 class PlayerPagePresenter:
@@ -296,12 +317,14 @@ class PlayerPagePresenter:
             return None
 
         latest_player = max(player, key=lambda x: x.active_period.start)
+        teammates = self._rosters_storage.get_teammates(latest_player.player_id)
         return PlayerPageDTO(
             player_nickname=latest_player.nickname,
             country=latest_player.flag_name or "-",
             flag_url=_format_flag_url(latest_player.flag_name),
             liquipedia_url=latest_player.liquipedia_url,
             teams=self._prepare_teams(player),
+            teammates=self._prepare_teammates(teammates),
         )
 
     def _prepare_teams(self, player: list[RosterPlayer]) -> list[PlayerTeamDTO]:
@@ -321,3 +344,24 @@ class PlayerPagePresenter:
                 )
             )
         return teams
+
+    def _prepare_teammates(
+        self, teammates: list[tuple[RosterPlayer, DateRange]]
+    ) -> list[TeammateDTO]:
+        teammates.sort(key=lambda x: (x[1].days, x[1].start), reverse=True)
+        results = []
+        for mate, period in teammates:
+            if period.days < 3:
+                break
+            results.append(
+                TeammateDTO(
+                    player_id=mate.player_id,
+                    nickname=mate.nickname,
+                    team_id=mate.team_id,
+                    period=(
+                        f"{_format_date(period.start)} - {_format_date(period.end)} "
+                        f"({period.days} days)"
+                    ),
+                )
+            )
+        return results

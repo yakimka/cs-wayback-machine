@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import duckdb
 
+from cs_wayback_machine.date_util import DateRange
 from cs_wayback_machine.entities import RosterPlayer, Team
 
 if TYPE_CHECKING:
@@ -67,6 +68,47 @@ class RosterStorage:
         for row in statement.fetchall():
             players.append(RosterPlayer(*row))
         return players
+
+    def get_teammates(self, player_id: str) -> list[tuple[RosterPlayer, DateRange]]:
+        query = """
+        SELECT tm.player_full_id, tm.team_id, tm.game_version, tm.player_id, tm.name,
+            tm.liquipedia_url, tm.is_captain, tm.position, tm.flag_name, tm.flag_url,
+            tm.join_date, tm.inactive_date, tm.leave_date, tm.join_date_raw,
+            tm.inactive_date_raw, tm.leave_date_raw,
+            GREATEST(tm.join_date, player.join_date) AS overlap_start,
+            LEAST(
+                COALESCE(tm.inactive_date, CURRENT_DATE),
+                COALESCE(player.inactive_date, CURRENT_DATE),
+                COALESCE(tm.leave_date, CURRENT_DATE),
+                COALESCE(player.leave_date, CURRENT_DATE)
+            ) AS overlap_end
+        FROM rosters AS player
+        JOIN rosters AS tm
+            ON player.team_id = tm.team_id
+            AND player.player_full_id <> tm.player_full_id
+            AND GREATEST(tm.join_date, player.join_date) < LEAST(
+                    COALESCE(tm.inactive_date, CURRENT_DATE),
+                    COALESCE(player.inactive_date, CURRENT_DATE),
+                    COALESCE(tm.leave_date, CURRENT_DATE),
+                    COALESCE(player.leave_date, CURRENT_DATE)
+                )
+        WHERE player.player_full_id = $player_id
+            AND player.join_date IS NOT NULL
+            AND (player.join_date_raw IS NULL OR player.join_date_raw = '')
+            AND (player.leave_date_raw IS NULL OR player.leave_date_raw = '')
+            AND (player.inactive_date_raw IS NULL OR player.inactive_date_raw = '')
+            AND tm.join_date IS NOT NULL
+            AND (tm.join_date_raw IS NULL OR tm.join_date_raw = '')
+            AND (tm.leave_date_raw IS NULL OR tm.leave_date_raw = '')
+            AND (tm.inactive_date_raw IS NULL OR tm.inactive_date_raw = '')
+        ORDER BY overlap_start;
+        """
+        statement = self._conn.execute(query, parameters={"player_id": player_id})
+        results = []
+        for row in statement.fetchall():
+            *player_data, start, end = row
+            results.append((RosterPlayer(*player_data), DateRange(start, end)))
+        return results
 
     def get_team_names(self) -> list[str]:
         query = """
@@ -207,6 +249,40 @@ class StatisticsCalculator:
         WHERE join_date IS NOT NULL
         GROUP BY team_id
         ORDER BY total_players DESC
+        LIMIT $limit;
+        """
+        statement = self._conn.execute(query, parameters={"limit": limit})
+        return statement.fetchall()
+
+    def players_with_most_teammates(self, *, limit: int) -> list[tuple[str, int]]:
+        query = """
+        WITH teammate_counts AS (
+            SELECT
+                player.player_full_id AS player_id,
+                COUNT(DISTINCT tm.player_full_id) AS teammate_count
+            FROM rosters AS player
+            JOIN rosters AS tm
+                ON player.team_id = tm.team_id
+                AND player.player_full_id <> tm.player_full_id
+                AND GREATEST(tm.join_date, player.join_date) < LEAST(
+                        COALESCE(tm.inactive_date, CURRENT_DATE),
+                        COALESCE(player.inactive_date, CURRENT_DATE),
+                        COALESCE(tm.leave_date, CURRENT_DATE),
+                        COALESCE(player.leave_date, CURRENT_DATE)
+                    )
+            WHERE player.join_date IS NOT NULL
+                AND (player.join_date_raw IS NULL OR player.join_date_raw = '')
+                AND (player.leave_date_raw IS NULL OR player.leave_date_raw = '')
+                AND (player.inactive_date_raw IS NULL OR player.inactive_date_raw = '')
+                AND tm.join_date IS NOT NULL
+                AND (tm.join_date_raw IS NULL OR tm.join_date_raw = '')
+                AND (tm.leave_date_raw IS NULL OR tm.leave_date_raw = '')
+                AND (tm.inactive_date_raw IS NULL OR tm.inactive_date_raw = '')
+            GROUP BY player.player_full_id
+        )
+        SELECT player_id, teammate_count
+        FROM teammate_counts
+        ORDER BY teammate_count DESC
         LIMIT $limit;
         """
         statement = self._conn.execute(query, parameters={"limit": limit})

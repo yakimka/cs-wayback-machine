@@ -17,5 +17,6 @@ class DateRange:
     def create(cls, start: date | None, end: date | None = None) -> DateRange:
         return cls(start or date.min, end or date.max)
 
-    def has_overlap(self, other: DateRange) -> bool:
-        return self.start < other.end and self.end > other.start
+    @property
+    def days(self) -> int:
+        return (self.end - self.start).days
