@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, unquote, urlparse
 
 import scrapy
+from scrapy.crawler import CrawlerProcess
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -167,3 +168,25 @@ class TeamsSpider(scrapy.Spider):
 
     def _clean_text(self, text: str) -> str:
         return unquote(text.strip().replace("_", " "))
+
+
+process = CrawlerProcess(
+    settings={
+        "FEEDS": {
+            "rosters1.jsonlines": {"format": "jsonlines"},
+        },
+        "BOT_NAME": "teamsscrapper",
+        "USER_AGENT": "CsWaybackMachineBot/0.1.0 (ss.yakim@gmail.com)",
+        "ROBOTSTXT_OBEY": False,
+        "CLOSESPIDER_ERRORCOUNT": 1,
+        "DOWNLOAD_DELAY": 1,
+        "CONCURRENT_REQUESTS_PER_DOMAIN": 2,
+        "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
+        "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+        "FEED_EXPORT_ENCODING": "utf-8",
+    }
+)
+
+if __name__ == "__main__":
+    process.crawl(TeamsSpider)
+    process.start()
