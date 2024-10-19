@@ -21,6 +21,14 @@ class Settings:
     email_for_scrapper_useragent: str
     parser_results_path: Path
 
+    @property
+    def parser_result_file_path(self) -> Path:
+        return self.parser_results_path.resolve() / "rosters.jsonlines"
+
+    @property
+    def parser_result_updated_date_file_path(self) -> Path:
+        return self.parser_results_path.resolve() / "updated.txt"
+
     @classmethod
     def create_from_config(cls) -> Settings:
         parser_results_path = settings.parser_results_path
