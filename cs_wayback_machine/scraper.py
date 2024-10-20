@@ -10,6 +10,7 @@ from scrapy.crawler import CrawlerProcess
 
 if TYPE_CHECKING:
     from collections.abc import Generator
+    from pathlib import Path
 
     from scrapy.http import Response
 
@@ -170,23 +171,20 @@ class TeamsSpider(scrapy.Spider):
         return unquote(text.strip().replace("_", " "))
 
 
-process = CrawlerProcess(
-    settings={
-        "FEEDS": {
-            "rosters1.jsonlines": {"format": "jsonlines"},
-        },
-        "BOT_NAME": "teamsscrapper",
-        "USER_AGENT": "CsWaybackMachineBot/0.1.0 (ss.yakim@gmail.com)",
-        "ROBOTSTXT_OBEY": False,
-        "CLOSESPIDER_ERRORCOUNT": 1,
-        "DOWNLOAD_DELAY": 1,
-        "CONCURRENT_REQUESTS_PER_DOMAIN": 2,
-        "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
-        "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-        "FEED_EXPORT_ENCODING": "utf-8",
-    }
-)
-
-if __name__ == "__main__":
-    process.crawl(TeamsSpider)
-    process.start()
+def create_crawler_process(*, result_path: str | Path, email: str) -> CrawlerProcess:
+    return CrawlerProcess(
+        settings={
+            "FEEDS": {
+                str(result_path): {"format": "jsonlines"},
+            },
+            "BOT_NAME": "teamsscrapper",
+            "USER_AGENT": f"CsWaybackMachineBot/0.1.0 ({email})",
+            "ROBOTSTXT_OBEY": False,
+            "CLOSESPIDER_ERRORCOUNT": 1,
+            "DOWNLOAD_DELAY": 1,
+            "CONCURRENT_REQUESTS_PER_DOMAIN": 2,
+            "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
+            "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+            "FEED_EXPORT_ENCODING": "utf-8",
+        }
+    )

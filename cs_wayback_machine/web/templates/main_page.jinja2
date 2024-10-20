@@ -15,9 +15,9 @@
                         placeholder="Type a CS team or player name, for example: Natus Vincere"
                         aria-label="Search"
                         class="awesomplete"
-                        list="mylist"
+                        list="search-items"
                 />
-                <datalist id="mylist">
+                <datalist id="search-items">
                     {% for item in data.search_items %}
                         <option>{{ item | safe }}</option>
                     {% endfor %}

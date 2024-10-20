@@ -385,3 +385,14 @@ class PlayerPagePresenter:
             )
         results.sort(key=lambda x: x.total_days, reverse=True)
         return results
+
+
+@dataclass
+class GlobalDataDTO:
+    db_last_updated_date: str | None = None
+
+
+def present_global_data(rosters_storage: RosterStorage) -> GlobalDataDTO:
+    return GlobalDataDTO(
+        db_last_updated_date=_format_date(rosters_storage.get_db_updated_date())
+    )

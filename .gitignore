@@ -7,3 +7,5 @@ docs/_build
 *.sqlite3
 *.db
 docker-compose.override.yml
+settings.yaml
+parser_results

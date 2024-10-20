@@ -1,0 +1,6 @@
+default:
+  email_for_scrapper_useragent: "me@example.com"
+  parser_results_path: "../parser_results"
+
+testing:
+  email_for_scrapper_useragent: "me@example.com"
