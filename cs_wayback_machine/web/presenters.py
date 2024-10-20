@@ -393,6 +393,7 @@ class GlobalDataDTO:
 
 
 def present_global_data(rosters_storage: RosterStorage) -> GlobalDataDTO:
+    updated_date = rosters_storage.get_db_updated_date()
     return GlobalDataDTO(
-        db_last_updated_date=_format_date(rosters_storage.get_db_updated_date())
+        db_last_updated_date=updated_date.isoformat() if updated_date else None
     )
