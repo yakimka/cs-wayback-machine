@@ -16,6 +16,17 @@ class RosterStorage:
     def __init__(self, conn: duckdb.DuckDBPyConnection) -> None:
         self._conn = conn
 
+    def get_db_updated_date(self) -> date | None:
+        query = """
+        SELECT rosters_updated_date
+        FROM meta;
+        """
+        statement = self._conn.execute(query)
+        row = statement.fetchone()
+        if row is None:
+            return None
+        return row[0]
+
     def get_team(self, team_id: str) -> Team | None:
         query = """
         SELECT name, full_name, liquipedia_url
@@ -127,8 +138,17 @@ class RosterStorage:
         return [row[0] for row in statement.fetchall()]
 
 
-def load_duck_db_database(parsed_rosters: Path) -> duckdb.DuckDBPyConnection:
+def load_duck_db_database(
+    parsed_rosters: Path, updated_file: Path | None = None
+) -> duckdb.DuckDBPyConnection:
     conn = duckdb.connect(":memory:")
+    conn.execute(
+        """
+        CREATE TABLE meta (
+            rosters_updated_date DATE,
+        )
+    """
+    )
     conn.execute(
         """
         CREATE TABLE teams (
@@ -182,6 +202,17 @@ def load_duck_db_database(parsed_rosters: Path) -> duckdb.DuckDBPyConnection:
     FROM rosters_rel
     """
     )
+    if updated_file is not None:
+        with open(updated_file) as file:
+            updated_date = file.read().strip()
+        conn.execute(
+            """
+            INSERT INTO meta (rosters_updated_date)
+            VALUES ($updated_date)
+            """,
+            parameters={"updated_date": updated_date},
+        )
+
     return conn
 
 

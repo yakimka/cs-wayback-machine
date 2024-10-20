@@ -2,11 +2,19 @@ from pathlib import Path
 
 import pytest
 
-from cs_wayback_machine.web.deps import get_parser_result_file_path
+from cs_wayback_machine.web.deps import (
+    get_parser_result_file_path,
+    get_parser_result_updated_date_file_path,
+)
 
 pytestmark = pytest.mark.picodi_override(
-    get_parser_result_file_path,
-    lambda: Path(__file__).parent / "rosters.jsonlines",
+    [
+        (
+            get_parser_result_file_path,
+            lambda: Path(__file__).parent / "rosters.jsonlines",
+        ),
+        (get_parser_result_updated_date_file_path, lambda: None),
+    ]
 )
 
 
