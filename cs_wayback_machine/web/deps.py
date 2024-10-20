@@ -6,16 +6,14 @@ from picodi import Provide, SingletonScope, dependency, inject
 
 from cs_wayback_machine.settings import Settings
 from cs_wayback_machine.storage import (
+    DuckDbConnectionManager,
     RosterStorage,
     StatisticsCalculator,
-    load_duck_db_database,
 )
 from cs_wayback_machine.web.presenters import GlobalDataDTO, present_global_data
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-    import duckdb
 
 
 @dependency(scope_class=SingletonScope, use_init_hook=True)
@@ -37,29 +35,33 @@ def get_parser_result_updated_date_file_path(
 
 @dependency(scope_class=SingletonScope, use_init_hook=True)
 @inject
-def get_duckdb_connection(
+def get_duckdb_connection_manager(
     parser_result_file: Path = Provide(get_parser_result_file_path),
     parser_result_updated_date_file_path: Path = Provide(
         get_parser_result_updated_date_file_path
     ),
-) -> duckdb.DuckDBPyConnection:
-    return load_duck_db_database(
+) -> DuckDbConnectionManager:
+    return DuckDbConnectionManager(
         parser_result_file, updated_file=parser_result_updated_date_file_path
     )
 
 
 @inject
 def get_rosters_storage(
-    duckdb_conn: duckdb.DuckDBPyConnection = Provide(get_duckdb_connection),
+    duckdb_conn_manager: DuckDbConnectionManager = Provide(
+        get_duckdb_connection_manager
+    ),
 ) -> RosterStorage:
-    return RosterStorage(duckdb_conn)
+    return RosterStorage(duckdb_conn_manager)
 
 
 @inject
 def get_statistics_calculator(
-    duckdb_conn: duckdb.DuckDBPyConnection = Provide(get_duckdb_connection),
+    duckdb_conn_manager: DuckDbConnectionManager = Provide(
+        get_duckdb_connection_manager
+    ),
 ) -> StatisticsCalculator:
-    return StatisticsCalculator(duckdb_conn)
+    return StatisticsCalculator(duckdb_conn_manager)
 
 
 @inject

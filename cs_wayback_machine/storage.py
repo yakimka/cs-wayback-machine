@@ -13,15 +13,15 @@ if TYPE_CHECKING:
 
 
 class RosterStorage:
-    def __init__(self, conn: duckdb.DuckDBPyConnection) -> None:
-        self._conn = conn
+    def __init__(self, manager: DuckDbConnectionManager) -> None:
+        self._manager = manager
 
     def get_db_updated_date(self) -> date | None:
         query = """
         SELECT rosters_updated_date
         FROM meta;
         """
-        statement = self._conn.execute(query)
+        statement = self._manager.conn.execute(query)
         row = statement.fetchone()
         if row is None:
             return None
@@ -33,7 +33,7 @@ class RosterStorage:
         FROM teams
         WHERE full_name = $team_id;
         """
-        statement = self._conn.execute(query, parameters={"team_id": team_id})
+        statement = self._manager.conn.execute(query, parameters={"team_id": team_id})
         row = statement.fetchone()
         if row is None:
             return None
@@ -53,7 +53,7 @@ class RosterStorage:
         AND (inactive_date >= $start_date OR inactive_date IS NULL);
         """
 
-        statement = self._conn.execute(
+        statement = self._manager.conn.execute(
             query,
             parameters={
                 "team_id": team_id,
@@ -74,7 +74,9 @@ class RosterStorage:
         FROM rosters
         WHERE player_full_id = $player_id;
         """
-        statement = self._conn.execute(query, parameters={"player_id": player_id})
+        statement = self._manager.conn.execute(
+            query, parameters={"player_id": player_id}
+        )
         players = []
         for row in statement.fetchall():
             players.append(RosterPlayer(*row))
@@ -114,7 +116,9 @@ class RosterStorage:
             AND (tm.inactive_date_raw IS NULL OR tm.inactive_date_raw = '')
         ORDER BY overlap_start;
         """
-        statement = self._conn.execute(query, parameters={"player_id": player_id})
+        statement = self._manager.conn.execute(
+            query, parameters={"player_id": player_id}
+        )
         results = []
         for row in statement.fetchall():
             *player_data, start, end = row
@@ -126,7 +130,7 @@ class RosterStorage:
         SELECT full_name
         FROM teams;
         """
-        statement = self._conn.execute(query)
+        statement = self._manager.conn.execute(query)
         return [row[0] for row in statement.fetchall()]
 
     def get_player_names(self) -> list[str]:
@@ -134,91 +138,95 @@ class RosterStorage:
         SELECT DISTINCT player_full_id
         FROM rosters;
         """
-        statement = self._conn.execute(query)
+        statement = self._manager.conn.execute(query)
         return [row[0] for row in statement.fetchall()]
 
 
-def load_duck_db_database(
-    parsed_rosters: Path, updated_file: Path | None = None
-) -> duckdb.DuckDBPyConnection:
-    conn = duckdb.connect(":memory:")
-    conn.execute(
-        """
-        CREATE TABLE meta (
-            rosters_updated_date DATE,
-        )
-    """
-    )
-    conn.execute(
-        """
-        CREATE TABLE teams (
-            full_name TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            liquipedia_url TEXT NOT NULL,
-        )
-    """
-    )
-    conn.execute(
-        """
-        CREATE TABLE rosters (
-            player_full_id TEXT,
-            team_id TEXT REFERENCES teams(full_name),
-            game_version TEXT,
-            player_id TEXT NOT NULL,
-            name TEXT,
-            liquipedia_url TEXT,
-            is_captain BOOLEAN NOT NULL,
-            position TEXT,
-            flag_name TEXT,
-            flag_url TEXT,
-            join_date DATE,
-            inactive_date DATE,
-            leave_date DATE,
-            join_date_raw TEXT,
-            inactive_date_raw TEXT,
-            leave_date_raw TEXT
-        )
-    """
-    )
+class DuckDbConnectionManager:
+    def __init__(self, parsed_rosters: Path, updated_file: Path | None = None) -> None:
+        self._parsed_rosters = parsed_rosters
+        self._updated_file = updated_file
+        self.conn = self._create_new_connection()
 
-    rosters_rel = conn.read_json(str(parsed_rosters))  # noqa: F841
-    conn.execute(
-        """
-    INSERT INTO teams (full_name, name, liquipedia_url)
-    SELECT DISTINCT ON (team_full_name) team_full_name, team_name, team_url
-    FROM rosters_rel
-    """
-    )
-    conn.execute(
-        """
-    INSERT INTO rosters (
-        player_full_id, team_id, game_version, player_id, name, liquipedia_url,
-        is_captain, position, flag_name, flag_url, join_date, inactive_date, leave_date,
-        join_date_raw, inactive_date_raw, leave_date_raw
-    )
-    SELECT player_full_id, team_full_name, game_version, player_id, full_name,
-        player_url, is_captain, position, flag_name, flag_url, join_date, inactive_date,
-        leave_date, join_date_raw, inactive_date_raw, leave_date_raw
-    FROM rosters_rel
-    """
-    )
-    if updated_file is not None:
-        with open(updated_file) as file:
-            updated_date = file.read().strip()
+    def _create_new_connection(self) -> duckdb.DuckDBPyConnection:
+        conn = duckdb.connect(":memory:")
         conn.execute(
             """
-            INSERT INTO meta (rosters_updated_date)
-            VALUES ($updated_date)
-            """,
-            parameters={"updated_date": updated_date},
+            CREATE TABLE meta (
+                rosters_updated_date DATE,
+            )
+        """
+        )
+        conn.execute(
+            """
+            CREATE TABLE teams (
+                full_name TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                liquipedia_url TEXT NOT NULL,
+            )
+        """
+        )
+        conn.execute(
+            """
+            CREATE TABLE rosters (
+                player_full_id TEXT,
+                team_id TEXT REFERENCES teams(full_name),
+                game_version TEXT,
+                player_id TEXT NOT NULL,
+                name TEXT,
+                liquipedia_url TEXT,
+                is_captain BOOLEAN NOT NULL,
+                position TEXT,
+                flag_name TEXT,
+                flag_url TEXT,
+                join_date DATE,
+                inactive_date DATE,
+                leave_date DATE,
+                join_date_raw TEXT,
+                inactive_date_raw TEXT,
+                leave_date_raw TEXT
+            )
+        """
         )
 
-    return conn
+        rosters_rel = conn.read_json(str(self._parsed_rosters))  # noqa: F841
+        conn.execute(
+            """
+        INSERT INTO teams (full_name, name, liquipedia_url)
+        SELECT DISTINCT ON (team_full_name) team_full_name, team_name, team_url
+        FROM rosters_rel
+        """
+        )
+        conn.execute(
+            """
+        INSERT INTO rosters (
+            player_full_id, team_id, game_version, player_id, name, liquipedia_url,
+            is_captain, position, flag_name, flag_url, join_date, inactive_date,
+            leave_date, join_date_raw, inactive_date_raw, leave_date_raw
+        )
+        SELECT player_full_id, team_full_name, game_version, player_id, full_name,
+            player_url, is_captain, position, flag_name, flag_url, join_date,
+            inactive_date, leave_date, join_date_raw, inactive_date_raw, leave_date_raw
+        FROM rosters_rel
+        """
+        )
+        if self._updated_file is not None:
+            with open(self._updated_file) as file:
+                updated_date = file.read().strip()
+            conn.execute(
+                """
+                INSERT INTO meta (rosters_updated_date)
+                VALUES ($updated_date)
+                """,
+                parameters={"updated_date": updated_date},
+            )
+
+        return conn
 
 
 class StatisticsCalculator:
-    def __init__(self, conn: duckdb.DuckDBPyConnection) -> None:
-        self._conn = conn
+    def __init__(self, manager: DuckDbConnectionManager) -> None:
+        self._manager = manager
 
     def players_with_most_days_in_current_team(
         self, *, limit: int
@@ -237,7 +245,7 @@ class StatisticsCalculator:
         ORDER BY total_days DESC
         LIMIT $limit;
         """
-        statement = self._conn.execute(query, parameters={"limit": limit})
+        statement = self._manager.conn.execute(query, parameters={"limit": limit})
         return statement.fetchall()
 
     def players_with_most_teams(self, *, limit: int) -> list[tuple[str, int]]:
@@ -251,7 +259,7 @@ class StatisticsCalculator:
         ORDER BY total_teams DESC
         LIMIT $limit;
         """
-        statement = self._conn.execute(query, parameters={"limit": limit})
+        statement = self._manager.conn.execute(query, parameters={"limit": limit})
         return statement.fetchall()
 
     def active_players_by_country(self, *, limit: int) -> list[tuple[str, int]]:
@@ -268,7 +276,7 @@ class StatisticsCalculator:
         ORDER BY total_players DESC
         LIMIT $limit;
         """
-        statement = self._conn.execute(query, parameters={"limit": limit})
+        statement = self._manager.conn.execute(query, parameters={"limit": limit})
         return statement.fetchall()
 
     def teams_with_most_players(self, *, limit: int) -> list[tuple[str, int]]:
@@ -282,7 +290,7 @@ class StatisticsCalculator:
         ORDER BY total_players DESC
         LIMIT $limit;
         """
-        statement = self._conn.execute(query, parameters={"limit": limit})
+        statement = self._manager.conn.execute(query, parameters={"limit": limit})
         return statement.fetchall()
 
     def players_with_most_teammates(self, *, limit: int) -> list[tuple[str, int]]:
@@ -316,5 +324,5 @@ class StatisticsCalculator:
         ORDER BY teammate_count DESC
         LIMIT $limit;
         """
-        statement = self._conn.execute(query, parameters={"limit": limit})
+        statement = self._manager.conn.execute(query, parameters={"limit": limit})
         return statement.fetchall()
