@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+from datetime import date
 from typing import TYPE_CHECKING
 
 import duckdb
@@ -8,8 +10,10 @@ from cs_wayback_machine.date_util import DateRange
 from cs_wayback_machine.entities import RosterPlayer, Team
 
 if TYPE_CHECKING:
-    from datetime import date
     from pathlib import Path
+
+
+logger = logging.getLogger(__name__)
 
 
 class RosterStorage:
@@ -146,7 +150,35 @@ class DuckDbConnectionManager:
     def __init__(self, parsed_rosters: Path, updated_file: Path | None = None) -> None:
         self._parsed_rosters = parsed_rosters
         self._updated_file = updated_file
-        self.conn = self._create_new_connection()
+        self._conn: duckdb.DuckDBPyConnection | None = None
+
+    @property
+    def conn(self) -> duckdb.DuckDBPyConnection:
+        if self._conn is None:
+            self._conn = self._create_new_connection()
+        new_version = self._parser_results_version()
+        if new_version and new_version > self.db_version():
+            logger.info("New version of parser results detected, updating database")
+            self._conn = self._create_new_connection()
+        return self._conn
+
+    def db_version(self) -> date:
+        assert self._conn is not None
+        query = """
+        SELECT rosters_updated_date
+        FROM meta;
+        """
+        statement = self._conn.execute(query)
+        row = statement.fetchone()
+        assert row is not None
+        return row[0]
+
+    def _parser_results_version(self) -> date | None:
+        if self._updated_file is not None and self._updated_file.exists():
+            with open(self._updated_file) as file:
+                updated_date = date.fromisoformat(file.read().strip())
+            return updated_date
+        return None
 
     def _create_new_connection(self) -> duckdb.DuckDBPyConnection:
         conn = duckdb.connect(":memory:")
