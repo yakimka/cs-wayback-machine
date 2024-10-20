@@ -242,15 +242,13 @@ class DuckDbConnectionManager:
         FROM rosters_rel
         """
         )
-        if self._updated_file is not None:
-            with open(self._updated_file) as file:
-                updated_date = file.read().strip()
+        if version := self._parser_results_version():
             conn.execute(
                 """
                 INSERT INTO meta (rosters_updated_date)
                 VALUES ($updated_date)
                 """,
-                parameters={"updated_date": updated_date},
+                parameters={"updated_date": version},
             )
 
         return conn
