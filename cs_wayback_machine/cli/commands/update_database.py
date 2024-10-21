@@ -53,7 +53,7 @@ class UpdateDatabaseCommand(Command):
 
 def schedule_time(schedule: str) -> tuple[int, int, int]:
     res = datetime.strptime(schedule, "%w-%H-%M")
-    return res.weekday(), res.hour, res.minute
+    return int(schedule.split('-')[0]), res.hour, res.minute
 
 
 def next_run_time(schedule: tuple[int, int, int]) -> float:
