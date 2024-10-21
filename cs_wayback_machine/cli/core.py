@@ -20,3 +20,7 @@ class Command:
 def render_result(result: Result) -> None:
     print(result.message, flush=True)
     raise SystemExit(result.exit_code)
+
+
+def only_print_result(result: Result) -> None:
+    print(result.message, "Status:", result.exit_code, flush=True)
