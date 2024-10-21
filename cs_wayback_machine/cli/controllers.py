@@ -32,9 +32,11 @@ def scrape_liquidpedia_and_replace_result(
     )
     crawler = process.create_crawler(TeamsSpider)
     process.crawl(crawler)
-    process.start()
+    process.start(install_signal_handlers=False)
+    errors_count = crawler.stats.get_value("downloader/exception_count")
+    process.stop()
 
-    if crawler.stats.get_value("downloader/exception_count"):
+    if errors_count:
         return Result("Error occurred during the scraping", 1)
 
     result_file_path = str(settings.parser_result_file_path)
