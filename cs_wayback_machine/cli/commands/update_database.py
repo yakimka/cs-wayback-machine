@@ -37,16 +37,17 @@ class UpdateDatabaseCommand(Command):
     def schedule_job(self, schedule: tuple[int, int, int]) -> None:
         scheduler = sched.scheduler(time.time, time.sleep)
 
-        def job() -> None:
-            result = scrape_liquidpedia_and_replace_result()
-            only_print_result(result)
-            next = next_run_time(schedule)
-            print(f"Next run scheduled at {datetime.fromtimestamp(next)}", next)
-            scheduler.enterabs(next, 1, job)
+        def job(just_schedule: bool = False) -> None:
+            if not just_schedule:
+                result = scrape_liquidpedia_and_replace_result()
+                only_print_result(result)
+            next_run = next_run_time(schedule)
+            print(
+                f"Next run scheduled at {datetime.fromtimestamp(next_run)}", flush=True
+            )
+            scheduler.enterabs(next_run, 1, job)
 
-        next = next_run_time(schedule)
-        print(f"Next run scheduled at {datetime.fromtimestamp(next)}", next)
-        scheduler.enterabs(next, 1, job)
+        job(just_schedule=True)
         scheduler.run()
 
 
