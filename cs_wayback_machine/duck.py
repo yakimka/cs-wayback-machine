@@ -48,7 +48,6 @@ def create_new_connection_from_parser_results(
             is_captain BOOLEAN NOT NULL,
             position TEXT,
             flag_name TEXT,
-            flag_url TEXT,
             join_date DATE,
             inactive_date DATE,
             leave_date DATE,
@@ -73,12 +72,12 @@ def create_new_connection_from_parser_results(
         """
     INSERT INTO rosters (
         player_full_id, team_id, game_version, player_id, name, liquipedia_url,
-        is_captain, position, flag_name, flag_url, join_date, inactive_date,
-        leave_date, join_date_raw, inactive_date_raw, leave_date_raw
+        is_captain, position, flag_name, join_date, inactive_date, leave_date,
+        join_date_raw, inactive_date_raw, leave_date_raw
     )
     SELECT player_full_id, team_full_name, game_version, player_id, full_name,
-        player_url, is_captain, position, flag_name, flag_url, join_date,
-        inactive_date, leave_date, join_date_raw, inactive_date_raw, leave_date_raw
+        player_url, is_captain, position, flag_name, join_date, inactive_date,
+        leave_date, join_date_raw, inactive_date_raw, leave_date_raw
     FROM rosters_rel
     """
     )

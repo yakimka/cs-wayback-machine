@@ -59,7 +59,6 @@ class TeamsSpider(scrapy.Spider):
                 player_url = (
                     response.urljoin(player_url) if player_url is not None else None
                 )
-                flag_url = row.css("td.ID .flag img::attr(src)").get()
                 flag_name = row.css("td.ID .flag img::attr(title)").get("").strip()
                 position = row.css("td.Position i::text").get("").strip()
                 full_name = row.css("td.Name .LargeStuff::text").get("").strip()
@@ -78,9 +77,6 @@ class TeamsSpider(scrapy.Spider):
                     "is_captain": row.css('td.ID i[title="Captain"]').get() is not None,
                     "position": position or None,
                     "flag_name": flag_name or None,
-                    "flag_url": (
-                        response.urljoin(flag_url) if flag_url is not None else None
-                    ),
                     **extracted_dates,
                 }
 
