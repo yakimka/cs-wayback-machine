@@ -37,7 +37,7 @@ class TeamsSpider(scrapy.Spider):
         )
         tab_names = self._extract_cs_names(roster_section)
         roster_cards = roster_section.css(".roster-card")
-        for card_id, item in enumerate(roster_cards, start=1):
+        for item in roster_cards:
             for row in item.css("tr.Player"):
                 parent_content_el = row.xpath(
                     r'ancestor::*[re:test(@class, "content\d+")][1]'
@@ -63,31 +63,24 @@ class TeamsSpider(scrapy.Spider):
                 flag_name = row.css("td.ID .flag img::attr(title)").get("").strip()
                 position = row.css("td.Position i::text").get("").strip()
                 full_name = row.css("td.Name .LargeStuff::text").get("").strip()
-                new_team = (
-                    row.css("td.NewTeam .team-template-text a::text").get("").strip()
-                )
                 team_slug = self._extract_name_from_url(response.url)
                 player_id = row.css("td.ID a::text").get().strip()
                 player_slug = self._extract_name_from_url(player_url) or ""
                 yield {
+                    "team_full_name": self._clean_text(team_slug or ""),
                     "team_name": team_name,
                     "team_url": response.url,
-                    "team_full_name": self._clean_text(team_slug or ""),
-                    "team_slug": team_slug,
-                    "game_version": game_version,
-                    "card_id": card_id,
-                    "player_id": player_id,
-                    "player_url": player_url,
                     "player_full_id": self._clean_text(player_slug or player_id),
-                    "player_slug": player_slug,
-                    "position": position or None,
+                    "game_version": game_version,
+                    "player_id": player_id,
+                    "full_name": full_name or None,
+                    "player_url": player_url,
                     "is_captain": row.css('td.ID i[title="Captain"]').get() is not None,
+                    "position": position or None,
                     "flag_name": flag_name or None,
                     "flag_url": (
                         response.urljoin(flag_url) if flag_url is not None else None
                     ),
-                    "full_name": full_name or None,
-                    "new_team": new_team or None,
                     **extracted_dates,
                 }
 
