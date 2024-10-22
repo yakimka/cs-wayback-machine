@@ -10,7 +10,8 @@ from cs_wayback_machine.web.slugify import slugify
 
 if TYPE_CHECKING:
     from cs_wayback_machine.entities import Roster, RosterPlayer
-    from cs_wayback_machine.storage import RosterStorage, StatisticsCalculator
+    from cs_wayback_machine.statistics import StatisticsCalculator
+    from cs_wayback_machine.storage import RosterStorage
 
 
 @dataclass
