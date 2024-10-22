@@ -26,6 +26,7 @@ def scrape_liquidpedia_and_replace_result(
 ) -> Result:
     settings.parser_results_path.mkdir(parents=False, exist_ok=True)
     tmp_file = settings.parser_results_path / "rosters.inprogress.jsonlines"
+    tmp_file.unlink(missing_ok=True)
 
     process = create_crawler_process(
         result_path=tmp_file, email=settings.email_for_scrapper_useragent
@@ -39,9 +40,10 @@ def scrape_liquidpedia_and_replace_result(
     if errors_count:
         return Result("Error occurred during the scraping", 1)
 
-    result_file_path = str(settings.parser_result_file_path)
-    shutil.move(result_file_path, result_file_path + ".bak")
-    shutil.move(tmp_file, result_file_path)
+    parser_result_file_path = settings.parser_result_file_path
+    if parser_result_file_path.exists():
+        shutil.move(parser_result_file_path, f"{parser_result_file_path}.bak")
+    shutil.move(tmp_file, parser_result_file_path)
     with open(settings.parser_result_updated_date_file_path, "w") as f:
         f.write(date.today().isoformat())
 
