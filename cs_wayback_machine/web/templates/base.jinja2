@@ -1,3 +1,8 @@
+{% if page_title is not defined %}
+    {% set page_title = "Counter Strike Wayback Machine" %}
+{% else %}
+    {% set page_title = page_title ~ " | Counter Strike Wayback Machine" %}
+{% endif %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -7,13 +12,13 @@
     <link rel="stylesheet" href="/pico.min.css">
     <link rel="stylesheet" href="/style.css">
     {% block in_head %}{% endblock %}
-    <title>{{ page_title }} | Counter Strike Wayback Machine</title>
-    <meta name="title" content="{{ page_title }} | Counter Strike Wayback Machine"/>
+    <title>{{ page_title }}</title>
+    <meta name="title" content="{{ page_title }}"/>
     <meta name="description" content="Service for Viewing Historical Data on Counter-Strike Players and Teams"/>
-    <meta property="og:title" content="{{ page_title }} | Counter Strike Wayback Machine"/>
+    <meta property="og:title" content="{{ page_title }}"/>
     <meta property="og:description" content="Service for Viewing Historical Data on Counter-Strike Players and Teams "/>
     <meta property="og:image" content="https://cs-wayback-machine.yakimka.me/android-chrome-512x512.png"/>
-    <meta property="twitter:title" content="{{ page_title }} | Counter Strike Wayback Machine"/>
+    <meta property="twitter:title" content="{{ page_title }}"/>
     <meta property="twitter:description" content="Service for Viewing Historical Data on Counter-Strike Players and Teams "/>
     <meta property="twitter:image" content="https://cs-wayback-machine.yakimka.me/android-chrome-512x512.png"/>
 </head>

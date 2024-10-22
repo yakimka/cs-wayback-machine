@@ -18,7 +18,8 @@ from cs_wayback_machine.web.slugify import slugify
 if TYPE_CHECKING:
     from starlette.requests import Request
 
-    from cs_wayback_machine.storage import RosterStorage, StatisticsCalculator
+    from cs_wayback_machine.statistics import StatisticsCalculator
+    from cs_wayback_machine.storage import RosterStorage
 
 
 @inject

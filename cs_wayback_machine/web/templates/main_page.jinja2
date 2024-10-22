@@ -57,14 +57,22 @@
                                 <td>{{ loop.index }}</td>
                                 {% for cell in row %}
                                     <td>
-                                        {% if cell.is_team_id %}
+                                        {% if cell.is_team_id or cell.is_player_id %}
                                             <a class="contrast"
-                                               href="{{ team_link(cell.value) }}">{{ cell.value }}</a>
-                                        {% elif cell.is_player_id %}
-                                            <a class="contrast"
-                                               href="{{ player_link(cell.value) }}">{{ cell.value }}</a>
+                                                    {% if cell.is_team_id %}
+                                               href="{{ team_link(cell.value) }}"
+                                                    {% elif cell.is_player_id %}
+                                               href="{{ player_link(cell.value) }}"
+                                                    {% endif %}
+                                            >
+                                        {% endif %}
+                                        {% if cell.description %}
+                                            <span data-tooltip="{{ cell.description }}">{{ cell.value }}</span>
                                         {% else %}
                                             {{ cell.value }}
+                                        {% endif %}
+                                        {% if cell.is_team_id or cell.is_player_id %}
+                                            </a>
                                         {% endif %}
                                     </td>
                                 {% endfor %}

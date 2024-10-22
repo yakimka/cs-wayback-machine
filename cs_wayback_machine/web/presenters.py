@@ -4,13 +4,14 @@ from dataclasses import dataclass
 from datetime import date
 from typing import TYPE_CHECKING
 
-from cs_wayback_machine.date_util import DateRange
+from cs_wayback_machine.date_util import DateRange, days_human_readable
 from cs_wayback_machine.roster import create_rosters
 from cs_wayback_machine.web.slugify import slugify
 
 if TYPE_CHECKING:
     from cs_wayback_machine.entities import Roster, RosterPlayer
-    from cs_wayback_machine.storage import RosterStorage, StatisticsCalculator
+    from cs_wayback_machine.statistics import StatisticsCalculator
+    from cs_wayback_machine.storage import RosterStorage
 
 
 @dataclass
@@ -178,6 +179,7 @@ def _format_flag_url(flag_name: str | None) -> str:
 @dataclass
 class RowValueDTO:
     value: str
+    description: str | None = None
     is_team_id: bool = False
     is_player_id: bool = False
 
@@ -221,15 +223,24 @@ class MainPagePresenter:
 
     def _build_statistics(self) -> list[TableDTO]:
         calc = self._statistics_calculator
+
+        def format_days_description(days: int) -> str | None:
+            if days <= 31:
+                return None
+            return f"{days} days"
+
         return [
             TableDTO(
-                title="TOP5 Players with most days in current team (without breaks)",
-                headers=["Player", "Team", "Days"],
+                title="TOP5 Players with most time in current team (without breaks)",
+                headers=["Player", "Team", "Period"],
                 rows=[
                     [
                         RowValueDTO(item[0], is_player_id=True),
                         RowValueDTO(item[1], is_team_id=True),
-                        RowValueDTO(str(item[2])),
+                        RowValueDTO(
+                            days_human_readable(item[2]),
+                            description=format_days_description(item[2]),
+                        ),
                     ]
                     for item in calc.players_with_most_days_in_current_team(limit=5)
                 ],
@@ -254,6 +265,21 @@ class MainPagePresenter:
                         RowValueDTO(str(item[1])),
                     ]
                     for item in calc.players_with_most_teammates(limit=10)
+                ],
+            ),
+            TableDTO(
+                title="TOP10 Teammates with most time together",
+                headers=["Player1", "Player2", "Total time"],
+                rows=[
+                    [
+                        RowValueDTO(item[0], is_player_id=True),
+                        RowValueDTO(item[1], is_player_id=True),
+                        RowValueDTO(
+                            days_human_readable(item[2]),
+                            description=format_days_description(item[2]),
+                        ),
+                    ]
+                    for item in calc.get_teammate_pair_with_most_time(limit=10)
                 ],
             ),
             TableDTO(

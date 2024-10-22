@@ -20,7 +20,6 @@ class RosterPlayer:
     is_captain: bool
     position: str | None
     flag_name: str | None
-    flag_url: str | None
     join_date: date | None
     inactive_date: date | None
     leave_date: date | None
@@ -61,5 +60,5 @@ class Roster:
 @dataclass
 class Team:
     name: str
-    full_name: str
+    unique_name: str
     liquipedia_url: str

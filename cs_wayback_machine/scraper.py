@@ -37,7 +37,7 @@ class TeamsSpider(scrapy.Spider):
         )
         tab_names = self._extract_cs_names(roster_section)
         roster_cards = roster_section.css(".roster-card")
-        for card_id, item in enumerate(roster_cards, start=1):
+        for item in roster_cards:
             for row in item.css("tr.Player"):
                 parent_content_el = row.xpath(
                     r'ancestor::*[re:test(@class, "content\d+")][1]'
@@ -54,92 +54,71 @@ class TeamsSpider(scrapy.Spider):
                     else:
                         game_version = None
 
-                extracted_dates = self._extract_dates(row)
-                player_url = row.css("td.ID a::attr(href)").get()
-                player_url = (
-                    response.urljoin(player_url) if player_url is not None else None
+                player_url = self._extract_text(
+                    row.css("td.ID a::attr(href)"), nullable=True
                 )
-                flag_url = row.css("td.ID .flag img::attr(src)").get()
-                flag_name = row.css("td.ID .flag img::attr(title)").get("").strip()
-                position = row.css("td.Position i::text").get("").strip()
-                full_name = row.css("td.Name .LargeStuff::text").get("").strip()
-                new_team = (
-                    row.css("td.NewTeam .team-template-text a::text").get("").strip()
-                )
+                if player_url is not None:
+                    player_url = response.urljoin(player_url)
                 team_slug = self._extract_name_from_url(response.url)
-                player_id = row.css("td.ID a::text").get().strip()
+                player_id = self._extract_text(row.css("td.ID a::text"))
                 player_slug = self._extract_name_from_url(player_url) or ""
+                extracted_dates = self._extract_dates(row)
                 yield {
+                    "team_unique_name": self._clean_text(team_slug or ""),
                     "team_name": team_name,
                     "team_url": response.url,
-                    "team_full_name": self._clean_text(team_slug or ""),
-                    "team_slug": team_slug,
-                    "game_version": game_version,
-                    "card_id": card_id,
-                    "player_id": player_id,
-                    "player_url": player_url,
-                    "player_full_id": self._clean_text(player_slug or player_id),
-                    "player_slug": player_slug,
-                    "position": position or None,
-                    "is_captain": row.css('td.ID i[title="Captain"]').get() is not None,
-                    "flag_name": flag_name or None,
-                    "flag_url": (
-                        response.urljoin(flag_url) if flag_url is not None else None
+                    "player_unique_id": self._clean_text(
+                        player_slug or player_id or ""
                     ),
-                    "full_name": full_name or None,
-                    "new_team": new_team or None,
-                    **extracted_dates,
+                    "game_version": game_version,
+                    "player_id": player_id,
+                    "full_name": self._extract_text(
+                        row.css("td.Name .LargeStuff::text"), nullable=True
+                    ),
+                    "player_url": player_url,
+                    "is_captain": row.css('td.ID i[title="Captain"]').get() is not None,
+                    "position": self._extract_text(
+                        row.css("td.Position i::text"), nullable=True
+                    ),
+                    "flag_name": self._extract_text(
+                        row.css("td.ID .flag img::attr(title)"), nullable=True
+                    ),
+                    "join_date": extracted_dates.get("join_date"),
+                    "inactive_date": extracted_dates.get("inactive_date"),
+                    "leave_date": extracted_dates.get("leave_date"),
+                    "join_date_raw": extracted_dates.get("join_date_raw"),
+                    "inactive_date_raw": extracted_dates.get("inactive_date_raw"),
+                    "leave_date_raw": extracted_dates.get("leave_date_raw"),
+                    "has_invalid_dates": (
+                        not extracted_dates
+                        or any(key.endswith("_raw") for key in extracted_dates)
+                    ),
                 }
 
-    def _extract_dates(self, node: Response) -> dict[str, str | None]:  # noqa: C901
+    def _extract_text(self, node: Any, *, nullable: bool = False) -> str | None:
+        text = node.get("").strip()
+        if nullable:
+            return text or None
+        return text
+
+    def _extract_dates(self, node: Response) -> dict[str, str | None]:
         dates = node.css("td.Date")
         dates_parsed: dict[str, str | None] = {}
         for date_el in dates:
-            date_type = date_el.css(".MobileStuffDate::text").get()
-            date_type = (
-                date_type.lower().replace(" ", "_").replace(":", "").strip().strip("_")
-            )
-            date_value = date_el.css("i::text").get("").strip()
-            if not date_value:
-                date_value = date_el.css("i abbr::text").get("").strip()
-            dates_parsed[date_type] = date_value or None
-            if "leave" in date_type.lower() and not date_value:
-                dates_parsed[date_type] = "unknown"
+            date_type_raw = date_el.css(".MobileStuffDate::text").get()
+            date_value_raw = date_el.css("i::text").get("")
+            if not date_value_raw:
+                date_value_raw = date_el.css("i abbr::text").get("")
 
-        raw_dates: dict[str, str | None] = {}
-        for date_type, value in dates_parsed.items():
-            if value is not None:
-                if value == "unknown":
-                    dates_parsed[date_type] = None
-                    raw_dates[f"{date_type}_raw"] = value
-                    continue
+            date_parser = DateParser(date_type_raw, date_value_raw)
+            date_type, date_val, date_raw = date_parser.parse()
+            if date_type is None:
+                continue
+            dates_parsed[date_type] = date_val.isoformat() if date_val else None
+            if date_raw is not None:
+                dates_parsed[f"{date_type}_raw"] = date_raw
 
-                value = value.strip()[:10]
-                raw_dates[f"{date_type}_raw"] = ""
-                try:
-                    date.fromisoformat(value)
-                    dates_parsed[date_type] = value
-                    continue
-                except ValueError:
-                    raw_dates[f"{date_type}_raw"] = value
-
-                if "?" in value[:4] or value == "-":
-                    dates_parsed[date_type] = None
-                    continue
-                # Fix for 2015-??-??1, 2013-??-02-??, etc
-                if len(value) > 4 and value[5] == "?":
-                    value = value[:4]
-                value = value.replace("?", "").replace("X", "").rstrip("-")
-                if len(value) < 4:
-                    continue
-                parts = value.split("-")
-                if "leave" in date_type or "inactive" in date_type:
-                    parts.extend(["12", "31"])
-                else:
-                    parts.extend(["01", "01"])
-                dates_parsed[date_type] = "-".join(parts[:3])
-
-        return dates_parsed | raw_dates
+        return dates_parsed
 
     def _extract_cs_names(self, node: Response) -> dict[str, str]:
         tabs = node.css(".nav-tabs li")
@@ -159,7 +138,7 @@ class TeamsSpider(scrapy.Spider):
         parent_div = games_element.xpath("./parent::div")
         return parent_div.css("a ::text").getall()
 
-    def _extract_name_from_url(self, url: str) -> str | None:
+    def _extract_name_from_url(self, url: str | None) -> str | None:
         if not url:
             return None
         if "action=edit" in url:
@@ -169,6 +148,82 @@ class TeamsSpider(scrapy.Spider):
 
     def _clean_text(self, text: str) -> str:
         return unquote(text.strip().replace("_", " "))
+
+
+class DateParser:
+    def __init__(self, date_type: str, date_value: str) -> None:
+        self._date_type_raw = date_type
+        self._date_value_raw = date_value
+        self._date_type: str | None = None
+        self._date_value: date | None = None
+
+    def parse(self) -> tuple[str | None, date | None, str | None]:
+        self._date_type_raw = self._date_type_raw.strip()
+        self._date_value_raw = self._date_value_raw.strip()
+
+        self._parse_date_type()
+        if not self._date_type:
+            return None, None, None
+        date_fixed = self._parse_date_value()
+
+        date_value_raw = None
+        empty_value = not self._date_value and not self._date_value_raw
+        if ("join" in self._date_type or "leave" in self._date_type) and empty_value:
+            date_value_raw = "unknown"
+        elif not self._date_value or date_fixed:
+            date_value_raw = self._date_value_raw or None
+
+        return self._date_type, self._date_value, date_value_raw
+
+    def _parse_date_type(self) -> None:
+        date_type = self._date_type_raw.lower().replace(" ", "_")
+        parsed = date_type.replace(":", "")
+        if parsed in ["join_date", "leave_date", "inactive_date"]:
+            self._date_type = parsed
+
+    def _parse_date_value(self) -> bool:
+        if self._date_type is None:
+            raise RuntimeError("Date type must be parsed first")
+
+        text = self._date_value_raw[:10].lower()
+        if date := self._parse_date(text):
+            self._date_value = date
+            return False
+
+        fixed_date = self._try_to_fix_date(text, to_start="join" in self._date_type)
+        if fixed_date is None:
+            return False
+        if date := self._parse_date(fixed_date):
+            self._date_value = date
+            return True
+        return False
+
+    def _parse_date(self, value: str) -> date | None:
+        try:
+            return date.fromisoformat(value)
+        except ValueError:
+            return None
+
+    def _try_to_fix_date(self, value: str, *, to_start: bool) -> str | None:
+        year = value[:4]
+        if len(year) < 4:
+            return None
+        try:
+            int(year)
+        except ValueError:
+            return None
+
+        if len(value) > 4 and not value[5].isdigit():
+            value = value[:4]
+        value = "".join(char for char in value if char.isdigit() or char == "-")
+        value = value.rstrip("-")
+
+        parts = value.split("-")
+        if to_start:
+            parts.extend(["01", "01"])
+        else:
+            parts.extend(["12", "31"])
+        return "-".join(parts[:3])
 
 
 def create_crawler_process(*, result_path: str | Path, email: str) -> CrawlerProcess:

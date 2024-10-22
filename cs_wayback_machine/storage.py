@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import duckdb
 
 from cs_wayback_machine.date_util import DateRange
+from cs_wayback_machine.duck import create_new_connection_from_parser_results
 from cs_wayback_machine.entities import RosterPlayer, Team
 
 if TYPE_CHECKING:
@@ -33,9 +34,9 @@ class RosterStorage:
 
     def get_team(self, team_id: str) -> Team | None:
         query = """
-        SELECT name, full_name, liquipedia_url
+        SELECT name, unique_name, liquipedia_url
         FROM teams
-        WHERE full_name = $team_id;
+        WHERE unique_name = $team_id;
         """
         statement = self._manager.conn.execute(query, parameters={"team_id": team_id})
         row = statement.fetchone()
@@ -47,8 +48,8 @@ class RosterStorage:
         self, team_id: str, date_from: date, date_to: date
     ) -> list[RosterPlayer]:
         query = """
-        SELECT player_full_id, team_id, game_version, player_id, name, liquipedia_url,
-            is_captain, position, flag_name, flag_url, join_date, inactive_date,
+        SELECT player_unique_id, team_id, game_version, player_id, name, liquipedia_url,
+            is_captain, position, flag_name, join_date, inactive_date,
             leave_date, join_date_raw, inactive_date_raw, leave_date_raw
         FROM rosters
         WHERE team_id = $team_id
@@ -72,11 +73,11 @@ class RosterStorage:
 
     def get_player(self, player_id: str) -> list[RosterPlayer]:
         query = """
-        SELECT player_full_id, team_id, game_version, player_id, name, liquipedia_url,
-            is_captain, position, flag_name, flag_url, join_date, inactive_date,
+        SELECT player_unique_id, team_id, game_version, player_id, name, liquipedia_url,
+            is_captain, position, flag_name, join_date, inactive_date,
             leave_date, join_date_raw, inactive_date_raw, leave_date_raw
         FROM rosters
-        WHERE player_full_id = $player_id;
+        WHERE player_unique_id = $player_id;
         """
         statement = self._manager.conn.execute(
             query, parameters={"player_id": player_id}
@@ -88,37 +89,130 @@ class RosterStorage:
 
     def get_teammates(self, player_id: str) -> list[tuple[RosterPlayer, DateRange]]:
         query = """
-        SELECT tm.player_full_id, tm.team_id, tm.game_version, tm.player_id, tm.name,
-            tm.liquipedia_url, tm.is_captain, tm.position, tm.flag_name, tm.flag_url,
-            tm.join_date, tm.inactive_date, tm.leave_date, tm.join_date_raw,
-            tm.inactive_date_raw, tm.leave_date_raw,
-            GREATEST(tm.join_date, player.join_date) AS overlap_start,
-            LEAST(
-                COALESCE(tm.inactive_date, CURRENT_DATE),
-                COALESCE(player.inactive_date, CURRENT_DATE),
-                COALESCE(tm.leave_date, CURRENT_DATE),
-                COALESCE(player.leave_date, CURRENT_DATE)
-            ) AS overlap_end
-        FROM rosters AS player
-        JOIN rosters AS tm
-            ON player.team_id = tm.team_id
-            AND player.player_full_id <> tm.player_full_id
-            AND GREATEST(tm.join_date, player.join_date) < LEAST(
+        WITH teammate_periods AS (
+            SELECT
+                tm.player_unique_id,
+                tm.team_id,
+                tm.game_version,
+                tm.player_id,
+                tm.name,
+                tm.liquipedia_url,
+                tm.is_captain,
+                tm.position,
+                tm.flag_name,
+                tm.join_date,
+                tm.inactive_date,
+                tm.leave_date,
+                tm.join_date_raw,
+                tm.inactive_date_raw,
+                tm.leave_date_raw,
+                GREATEST(tm.join_date, player.join_date) AS overlap_start,
+                LEAST(
+                    COALESCE(tm.inactive_date, CURRENT_DATE),
+                    COALESCE(player.inactive_date, CURRENT_DATE),
+                    COALESCE(tm.leave_date, CURRENT_DATE),
+                    COALESCE(player.leave_date, CURRENT_DATE)
+                ) AS overlap_end
+            FROM rosters AS player
+            JOIN rosters AS tm
+                ON player.team_id = tm.team_id
+                AND player.player_unique_id <> tm.player_unique_id
+                AND GREATEST(tm.join_date, player.join_date) < LEAST(
                     COALESCE(tm.inactive_date, CURRENT_DATE),
                     COALESCE(player.inactive_date, CURRENT_DATE),
                     COALESCE(tm.leave_date, CURRENT_DATE),
                     COALESCE(player.leave_date, CURRENT_DATE)
                 )
-        WHERE player.player_full_id = $player_id
-            AND player.join_date IS NOT NULL
-            AND (player.join_date_raw IS NULL OR player.join_date_raw = '')
-            AND (player.leave_date_raw IS NULL OR player.leave_date_raw = '')
-            AND (player.inactive_date_raw IS NULL OR player.inactive_date_raw = '')
-            AND tm.join_date IS NOT NULL
-            AND (tm.join_date_raw IS NULL OR tm.join_date_raw = '')
-            AND (tm.leave_date_raw IS NULL OR tm.leave_date_raw = '')
-            AND (tm.inactive_date_raw IS NULL OR tm.inactive_date_raw = '')
-        ORDER BY overlap_start;
+            WHERE player.player_unique_id = $player_id
+                AND player.join_date IS NOT NULL
+                AND (player.join_date_raw IS NULL OR player.join_date_raw = '')
+                AND (player.leave_date_raw IS NULL OR player.leave_date_raw = '')
+                AND (player.inactive_date_raw IS NULL OR player.inactive_date_raw = '')
+                AND tm.join_date IS NOT NULL
+                AND (tm.join_date_raw IS NULL OR tm.join_date_raw = '')
+                AND (tm.leave_date_raw IS NULL OR tm.leave_date_raw = '')
+                AND (tm.inactive_date_raw IS NULL OR tm.inactive_date_raw = '')
+        ),
+        merged_periods AS (
+            SELECT
+                player_unique_id,
+                team_id,
+                game_version,
+                player_id,
+                name,
+                liquipedia_url,
+                is_captain,
+                position,
+                flag_name,
+                join_date,
+                inactive_date,
+                leave_date,
+                join_date_raw,
+                inactive_date_raw,
+                leave_date_raw,
+                overlap_start,
+                overlap_end,
+                LAG(overlap_end) OVER
+                (
+                    PARTITION BY player_unique_id ORDER BY overlap_start
+                ) AS prev_overlap_end
+            FROM teammate_periods
+        ),
+        final_periods AS (
+            SELECT
+                player_unique_id,
+                team_id,
+                game_version,
+                player_id,
+                name,
+                liquipedia_url,
+                is_captain,
+                position,
+                flag_name,
+                join_date,
+                inactive_date,
+                leave_date,
+                join_date_raw,
+                inactive_date_raw,
+                leave_date_raw,
+                overlap_start,
+                overlap_end,
+                CASE
+                    WHEN prev_overlap_end IS NULL
+                        OR overlap_start > prev_overlap_end THEN overlap_start
+                    ELSE prev_overlap_end
+                END AS merged_start,
+                CASE
+                    WHEN prev_overlap_end IS NULL
+                        OR overlap_start > prev_overlap_end THEN overlap_end
+                    ELSE GREATEST(overlap_end, prev_overlap_end)
+                END AS merged_end
+            FROM merged_periods
+        )
+        SELECT
+            player_unique_id,
+            team_id,
+            game_version,
+            player_id,
+            name,
+            liquipedia_url,
+            is_captain,
+            position,
+            flag_name,
+            join_date,
+            inactive_date,
+            leave_date,
+            join_date_raw,
+            inactive_date_raw,
+            leave_date_raw,
+            merged_start AS overlap_start,
+            merged_end AS overlap_end
+        FROM final_periods
+        GROUP BY player_unique_id, team_id, game_version, player_id, name,
+            liquipedia_url, is_captain, position, flag_name, join_date,
+            inactive_date, leave_date, join_date_raw, inactive_date_raw, leave_date_raw,
+            merged_start, merged_end
+        ORDER BY merged_start;
         """
         statement = self._manager.conn.execute(
             query, parameters={"player_id": player_id}
@@ -131,7 +225,7 @@ class RosterStorage:
 
     def get_team_names(self) -> list[str]:
         query = """
-        SELECT full_name
+        SELECT unique_name
         FROM teams;
         """
         statement = self._manager.conn.execute(query)
@@ -139,7 +233,7 @@ class RosterStorage:
 
     def get_player_names(self) -> list[str]:
         query = """
-        SELECT DISTINCT player_full_id
+        SELECT DISTINCT player_unique_id
         FROM rosters;
         """
         statement = self._manager.conn.execute(query)
@@ -147,24 +241,27 @@ class RosterStorage:
 
 
 class DuckDbConnectionManager:
-    def __init__(self, parsed_rosters: Path, updated_file: Path | None = None) -> None:
-        self._parsed_rosters = parsed_rosters
-        self._updated_file = updated_file
+    def __init__(self, parser_results_storage: ParserResultsStorage) -> None:
+        self._parser_results_storage = parser_results_storage
         self._conn: duckdb.DuckDBPyConnection | None = None
 
     @property
     def conn(self) -> duckdb.DuckDBPyConnection:
         if self._conn is None:
-            self._conn = self._create_new_connection()
-        current_version = self.db_version()
-        new_version = self._parser_results_version()
+            self._conn = create_new_connection_from_parser_results(
+                self._parser_results_storage
+            )
+        current_version = self.version()
+        new_version = self._parser_results_storage.version()
         if new_version and (current_version is None or new_version > current_version):
             logger.info("New version of parser results detected, updating database")
             self._conn.close()
-            self._conn = self._create_new_connection()
+            self._conn = create_new_connection_from_parser_results(
+                self._parser_results_storage
+            )
         return self._conn
 
-    def db_version(self) -> date | None:
+    def version(self) -> date | None:
         assert self._conn is not None
         query = """
         SELECT rosters_updated_date
@@ -174,186 +271,13 @@ class DuckDbConnectionManager:
         row = statement.fetchone()
         return row[0] if row else None
 
-    def _parser_results_version(self) -> date | None:
+
+class ParserResultsStorage:
+    def __init__(self, parsed_rosters: Path, updated_file: Path | None = None):
+        self.parsed_rosters = parsed_rosters
+        self._updated_file = updated_file
+
+    def version(self) -> date | None:
         if self._updated_file is not None and self._updated_file.exists():
-            with open(self._updated_file) as file:
-                updated_date = date.fromisoformat(file.read().strip())
-            return updated_date
+            return date.fromisoformat(self._updated_file.read_text().strip())
         return None
-
-    def _create_new_connection(self) -> duckdb.DuckDBPyConnection:
-        conn = duckdb.connect(":memory:")
-        conn.execute(
-            """
-            CREATE TABLE meta (
-                rosters_updated_date DATE,
-            )
-        """
-        )
-        conn.execute(
-            """
-            CREATE TABLE teams (
-                full_name TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                liquipedia_url TEXT NOT NULL,
-            )
-        """
-        )
-        conn.execute(
-            """
-            CREATE TABLE rosters (
-                player_full_id TEXT,
-                team_id TEXT REFERENCES teams(full_name),
-                game_version TEXT,
-                player_id TEXT NOT NULL,
-                name TEXT,
-                liquipedia_url TEXT,
-                is_captain BOOLEAN NOT NULL,
-                position TEXT,
-                flag_name TEXT,
-                flag_url TEXT,
-                join_date DATE,
-                inactive_date DATE,
-                leave_date DATE,
-                join_date_raw TEXT,
-                inactive_date_raw TEXT,
-                leave_date_raw TEXT
-            )
-        """
-        )
-
-        rosters_rel = conn.read_json(str(self._parsed_rosters))  # noqa: F841
-        conn.execute(
-            """
-        INSERT INTO teams (full_name, name, liquipedia_url)
-        SELECT DISTINCT ON (team_full_name) team_full_name, team_name, team_url
-        FROM rosters_rel
-        """
-        )
-        conn.execute(
-            """
-        INSERT INTO rosters (
-            player_full_id, team_id, game_version, player_id, name, liquipedia_url,
-            is_captain, position, flag_name, flag_url, join_date, inactive_date,
-            leave_date, join_date_raw, inactive_date_raw, leave_date_raw
-        )
-        SELECT player_full_id, team_full_name, game_version, player_id, full_name,
-            player_url, is_captain, position, flag_name, flag_url, join_date,
-            inactive_date, leave_date, join_date_raw, inactive_date_raw, leave_date_raw
-        FROM rosters_rel
-        """
-        )
-        if version := self._parser_results_version():
-            conn.execute(
-                """
-                INSERT INTO meta (rosters_updated_date)
-                VALUES ($updated_date)
-                """,
-                parameters={"updated_date": version},
-            )
-
-        return conn
-
-
-class StatisticsCalculator:
-    def __init__(self, manager: DuckDbConnectionManager) -> None:
-        self._manager = manager
-
-    def players_with_most_days_in_current_team(
-        self, *, limit: int
-    ) -> list[tuple[str, str, int]]:
-        query = """
-        SELECT
-            player_full_id,
-            team_id,
-            SUM(CURRENT_DATE - join_date) AS total_days
-        FROM rosters
-        WHERE join_date IS NOT NULL AND inactive_date IS NULL and leave_date IS NULL
-            AND (join_date_raw IS NULL OR join_date_raw = '')
-            AND (leave_date_raw IS NULL OR leave_date_raw = '')
-            AND (inactive_date_raw IS NULL OR inactive_date_raw = '')
-        GROUP BY player_full_id, team_id
-        ORDER BY total_days DESC
-        LIMIT $limit;
-        """
-        statement = self._manager.conn.execute(query, parameters={"limit": limit})
-        return statement.fetchall()
-
-    def players_with_most_teams(self, *, limit: int) -> list[tuple[str, int]]:
-        query = """
-        SELECT
-            player_full_id,
-            COUNT(DISTINCT team_id) AS total_teams
-        FROM rosters
-        WHERE join_date IS NOT NULL
-        GROUP BY player_full_id
-        ORDER BY total_teams DESC
-        LIMIT $limit;
-        """
-        statement = self._manager.conn.execute(query, parameters={"limit": limit})
-        return statement.fetchall()
-
-    def active_players_by_country(self, *, limit: int) -> list[tuple[str, int]]:
-        query = """
-        SELECT
-            flag_name,
-            COUNT(DISTINCT player_full_id) AS total_players
-        FROM rosters
-        WHERE join_date IS NOT NULL AND leave_date IS NULL
-            AND (join_date_raw IS NULL OR join_date_raw = '')
-            AND (leave_date_raw IS NULL OR leave_date_raw = '')
-            AND (inactive_date_raw IS NULL OR inactive_date_raw = '')
-        GROUP BY flag_name
-        ORDER BY total_players DESC
-        LIMIT $limit;
-        """
-        statement = self._manager.conn.execute(query, parameters={"limit": limit})
-        return statement.fetchall()
-
-    def teams_with_most_players(self, *, limit: int) -> list[tuple[str, int]]:
-        query = """
-        SELECT
-            team_id,
-            COUNT(DISTINCT player_full_id) AS total_players
-        FROM rosters
-        WHERE join_date IS NOT NULL
-        GROUP BY team_id
-        ORDER BY total_players DESC
-        LIMIT $limit;
-        """
-        statement = self._manager.conn.execute(query, parameters={"limit": limit})
-        return statement.fetchall()
-
-    def players_with_most_teammates(self, *, limit: int) -> list[tuple[str, int]]:
-        query = """
-        WITH teammate_counts AS (
-            SELECT
-                player.player_full_id AS player_id,
-                COUNT(DISTINCT tm.player_full_id) AS teammate_count
-            FROM rosters AS player
-            JOIN rosters AS tm
-                ON player.team_id = tm.team_id
-                AND player.player_full_id <> tm.player_full_id
-                AND GREATEST(tm.join_date, player.join_date) < LEAST(
-                        COALESCE(tm.inactive_date, CURRENT_DATE),
-                        COALESCE(player.inactive_date, CURRENT_DATE),
-                        COALESCE(tm.leave_date, CURRENT_DATE),
-                        COALESCE(player.leave_date, CURRENT_DATE)
-                    )
-            WHERE player.join_date IS NOT NULL
-                AND (player.join_date_raw IS NULL OR player.join_date_raw = '')
-                AND (player.leave_date_raw IS NULL OR player.leave_date_raw = '')
-                AND (player.inactive_date_raw IS NULL OR player.inactive_date_raw = '')
-                AND tm.join_date IS NOT NULL
-                AND (tm.join_date_raw IS NULL OR tm.join_date_raw = '')
-                AND (tm.leave_date_raw IS NULL OR tm.leave_date_raw = '')
-                AND (tm.inactive_date_raw IS NULL OR tm.inactive_date_raw = '')
-            GROUP BY player.player_full_id
-        )
-        SELECT player_id, teammate_count
-        FROM teammate_counts
-        ORDER BY teammate_count DESC
-        LIMIT $limit;
-        """
-        statement = self._manager.conn.execute(query, parameters={"limit": limit})
-        return statement.fetchall()
