@@ -88,37 +88,132 @@ class RosterStorage:
 
     def get_teammates(self, player_id: str) -> list[tuple[RosterPlayer, DateRange]]:
         query = """
-        SELECT tm.player_full_id, tm.team_id, tm.game_version, tm.player_id, tm.name,
-            tm.liquipedia_url, tm.is_captain, tm.position, tm.flag_name, tm.flag_url,
-            tm.join_date, tm.inactive_date, tm.leave_date, tm.join_date_raw,
-            tm.inactive_date_raw, tm.leave_date_raw,
-            GREATEST(tm.join_date, player.join_date) AS overlap_start,
-            LEAST(
-                COALESCE(tm.inactive_date, CURRENT_DATE),
-                COALESCE(player.inactive_date, CURRENT_DATE),
-                COALESCE(tm.leave_date, CURRENT_DATE),
-                COALESCE(player.leave_date, CURRENT_DATE)
-            ) AS overlap_end
-        FROM rosters AS player
-        JOIN rosters AS tm
-            ON player.team_id = tm.team_id
-            AND player.player_full_id <> tm.player_full_id
-            AND GREATEST(tm.join_date, player.join_date) < LEAST(
+        WITH teammate_periods AS (
+            SELECT
+                tm.player_full_id,
+                tm.team_id,
+                tm.game_version,
+                tm.player_id,
+                tm.name,
+                tm.liquipedia_url,
+                tm.is_captain,
+                tm.position,
+                tm.flag_name,
+                tm.flag_url,
+                tm.join_date,
+                tm.inactive_date,
+                tm.leave_date,
+                tm.join_date_raw,
+                tm.inactive_date_raw,
+                tm.leave_date_raw,
+                GREATEST(tm.join_date, player.join_date) AS overlap_start,
+                LEAST(
+                    COALESCE(tm.inactive_date, CURRENT_DATE),
+                    COALESCE(player.inactive_date, CURRENT_DATE),
+                    COALESCE(tm.leave_date, CURRENT_DATE),
+                    COALESCE(player.leave_date, CURRENT_DATE)
+                ) AS overlap_end
+            FROM rosters AS player
+            JOIN rosters AS tm
+                ON player.team_id = tm.team_id
+                AND player.player_full_id <> tm.player_full_id
+                AND GREATEST(tm.join_date, player.join_date) < LEAST(
                     COALESCE(tm.inactive_date, CURRENT_DATE),
                     COALESCE(player.inactive_date, CURRENT_DATE),
                     COALESCE(tm.leave_date, CURRENT_DATE),
                     COALESCE(player.leave_date, CURRENT_DATE)
                 )
-        WHERE player.player_full_id = $player_id
-            AND player.join_date IS NOT NULL
-            AND (player.join_date_raw IS NULL OR player.join_date_raw = '')
-            AND (player.leave_date_raw IS NULL OR player.leave_date_raw = '')
-            AND (player.inactive_date_raw IS NULL OR player.inactive_date_raw = '')
-            AND tm.join_date IS NOT NULL
-            AND (tm.join_date_raw IS NULL OR tm.join_date_raw = '')
-            AND (tm.leave_date_raw IS NULL OR tm.leave_date_raw = '')
-            AND (tm.inactive_date_raw IS NULL OR tm.inactive_date_raw = '')
-        ORDER BY overlap_start;
+            WHERE player.player_full_id = $player_id
+                AND player.join_date IS NOT NULL
+                AND (player.join_date_raw IS NULL OR player.join_date_raw = '')
+                AND (player.leave_date_raw IS NULL OR player.leave_date_raw = '')
+                AND (player.inactive_date_raw IS NULL OR player.inactive_date_raw = '')
+                AND tm.join_date IS NOT NULL
+                AND (tm.join_date_raw IS NULL OR tm.join_date_raw = '')
+                AND (tm.leave_date_raw IS NULL OR tm.leave_date_raw = '')
+                AND (tm.inactive_date_raw IS NULL OR tm.inactive_date_raw = '')
+        ),
+        merged_periods AS (
+            SELECT
+                player_full_id,
+                team_id,
+                game_version,
+                player_id,
+                name,
+                liquipedia_url,
+                is_captain,
+                position,
+                flag_name,
+                flag_url,
+                join_date,
+                inactive_date,
+                leave_date,
+                join_date_raw,
+                inactive_date_raw,
+                leave_date_raw,
+                overlap_start,
+                overlap_end,
+                LAG(overlap_end) OVER
+                (PARTITION BY player_full_id ORDER BY overlap_start) AS prev_overlap_end
+            FROM teammate_periods
+        ),
+        final_periods AS (
+            SELECT
+                player_full_id,
+                team_id,
+                game_version,
+                player_id,
+                name,
+                liquipedia_url,
+                is_captain,
+                position,
+                flag_name,
+                flag_url,
+                join_date,
+                inactive_date,
+                leave_date,
+                join_date_raw,
+                inactive_date_raw,
+                leave_date_raw,
+                overlap_start,
+                overlap_end,
+                CASE
+                    WHEN prev_overlap_end IS NULL
+                        OR overlap_start > prev_overlap_end THEN overlap_start
+                    ELSE prev_overlap_end
+                END AS merged_start,
+                CASE
+                    WHEN prev_overlap_end IS NULL
+                        OR overlap_start > prev_overlap_end THEN overlap_end
+                    ELSE GREATEST(overlap_end, prev_overlap_end)
+                END AS merged_end
+            FROM merged_periods
+        )
+        SELECT
+            player_full_id,
+            team_id,
+            game_version,
+            player_id,
+            name,
+            liquipedia_url,
+            is_captain,
+            position,
+            flag_name,
+            flag_url,
+            join_date,
+            inactive_date,
+            leave_date,
+            join_date_raw,
+            inactive_date_raw,
+            leave_date_raw,
+            merged_start AS overlap_start,
+            merged_end AS overlap_end
+        FROM final_periods
+        GROUP BY player_full_id, team_id, game_version, player_id, name, liquipedia_url,
+            is_captain, position, flag_name, flag_url, join_date, inactive_date,
+            leave_date, join_date_raw, inactive_date_raw, leave_date_raw, merged_start,
+            merged_end
+        ORDER BY merged_start;
         """
         statement = self._manager.conn.execute(
             query, parameters={"player_id": player_id}
@@ -263,15 +358,49 @@ class StatisticsCalculator:
         self, *, limit: int
     ) -> list[tuple[str, str, int]]:
         query = """
+        WITH active_periods AS (
+            SELECT
+                player_full_id,
+                team_id,
+                join_date,
+                COALESCE(inactive_date, leave_date, CURRENT_DATE) AS end_date
+            FROM rosters
+            WHERE join_date IS NOT NULL
+                AND inactive_date IS NULL
+                AND leave_date IS NULL
+                AND (join_date_raw IS NULL OR join_date_raw = '')
+                AND (leave_date_raw IS NULL OR leave_date_raw = '')
+                AND (inactive_date_raw IS NULL OR inactive_date_raw = '')
+        ),
+        merged_periods AS (
+            SELECT
+                player_full_id,
+                team_id,
+                join_date,
+                end_date,
+                LAG(end_date) OVER(
+                    PARTITION BY player_full_id, team_id ORDER BY join_date
+                ) AS prev_end_date
+            FROM active_periods
+        ),
+        final_periods AS (
+            SELECT
+                player_full_id,
+                team_id,
+                join_date,
+                end_date,
+                CASE
+                    WHEN prev_end_date IS NULL
+                        OR join_date > prev_end_date THEN end_date - join_date
+                    ELSE end_date - GREATEST(prev_end_date, join_date)
+                END AS period_days
+            FROM merged_periods
+        )
         SELECT
             player_full_id,
             team_id,
-            SUM(CURRENT_DATE - join_date) AS total_days
-        FROM rosters
-        WHERE join_date IS NOT NULL AND inactive_date IS NULL and leave_date IS NULL
-            AND (join_date_raw IS NULL OR join_date_raw = '')
-            AND (leave_date_raw IS NULL OR leave_date_raw = '')
-            AND (inactive_date_raw IS NULL OR inactive_date_raw = '')
+            SUM(period_days) AS total_days
+        FROM final_periods
         GROUP BY player_full_id, team_id
         ORDER BY total_days DESC
         LIMIT $limit;
@@ -355,5 +484,66 @@ class StatisticsCalculator:
         ORDER BY teammate_count DESC
         LIMIT $limit;
         """
+        statement = self._manager.conn.execute(query, parameters={"limit": limit})
+        return statement.fetchall()
+
+    def get_teammate_pair_with_most_time(
+        self, *, limit: int
+    ) -> list[tuple[str, str, int]]:
+        query = """
+        WITH teammate_pairs AS (
+            SELECT
+                LEAST(player.player_full_id, tm.player_full_id) AS player1,
+                GREATEST(player.player_full_id, tm.player_full_id) AS player2,
+                GREATEST(player.join_date, tm.join_date) AS overlap_start,
+                LEAST(
+                    COALESCE(tm.inactive_date, CURRENT_DATE),
+                    COALESCE(player.inactive_date, CURRENT_DATE),
+                    COALESCE(player.leave_date, CURRENT_DATE),
+                    COALESCE(tm.leave_date, CURRENT_DATE)
+                ) AS overlap_end
+            FROM rosters AS player
+            JOIN rosters AS tm
+                ON player.team_id = tm.team_id
+                AND player.player_full_id <> tm.player_full_id
+                AND GREATEST(player.join_date, tm.join_date) <= LEAST(
+                    COALESCE(tm.inactive_date, CURRENT_DATE),
+                    COALESCE(player.inactive_date, CURRENT_DATE),
+                    COALESCE(player.leave_date, CURRENT_DATE),
+                    COALESCE(tm.leave_date, CURRENT_DATE)
+                )
+            WHERE player.join_date IS NOT NULL
+                AND (player.join_date_raw IS NULL OR player.join_date_raw = '')
+                AND (player.leave_date_raw IS NULL OR player.leave_date_raw = '')
+                AND (player.inactive_date_raw IS NULL OR player.inactive_date_raw = '')
+                AND tm.join_date IS NOT NULL
+                AND (tm.join_date_raw IS NULL OR tm.join_date_raw = '')
+                AND (tm.leave_date_raw IS NULL OR tm.leave_date_raw = '')
+                AND (tm.inactive_date_raw IS NULL OR tm.inactive_date_raw = '')
+        ),
+        merged_pairs AS (
+            SELECT player1, player2, overlap_start, overlap_end,
+                LAG(overlap_end) OVER (
+                    PARTITION BY player1, player2 ORDER BY overlap_start
+                ) AS prev_overlap_end
+            FROM teammate_pairs
+        ),
+        final_pairs AS (
+            SELECT player1, player2, overlap_start, overlap_end,
+                   CASE
+                       WHEN prev_overlap_end IS NULL
+                        OR overlap_start > prev_overlap_end
+                   THEN overlap_end - overlap_start
+                   ELSE overlap_end - GREATEST(prev_overlap_end, overlap_start)
+                   END AS overlap_days
+            FROM merged_pairs
+        )
+        SELECT player1, player2, SUM(overlap_days) AS total_overlap_days
+        FROM final_pairs
+        GROUP BY player1, player2
+        ORDER BY total_overlap_days DESC
+        LIMIT $limit;
+        """
+
         statement = self._manager.conn.execute(query, parameters={"limit": limit})
         return statement.fetchall()
