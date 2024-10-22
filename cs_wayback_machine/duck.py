@@ -30,7 +30,7 @@ def create_new_connection_from_parser_results(
     conn.execute(
         """
         CREATE TABLE teams (
-            full_name TEXT PRIMARY KEY,
+            unique_name TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             liquipedia_url TEXT NOT NULL,
         )
@@ -39,8 +39,8 @@ def create_new_connection_from_parser_results(
     conn.execute(
         """
         CREATE TABLE rosters (
-            player_full_id TEXT,
-            team_id TEXT REFERENCES teams(full_name),
+            player_unique_id TEXT,
+            team_id TEXT REFERENCES teams(unique_name),
             game_version TEXT,
             player_id TEXT NOT NULL,
             name TEXT,
@@ -63,19 +63,19 @@ def create_new_connection_from_parser_results(
     )
     conn.execute(
         """
-    INSERT INTO teams (full_name, name, liquipedia_url)
-    SELECT DISTINCT ON (team_full_name) team_full_name, team_name, team_url
+    INSERT INTO teams (unique_name, name, liquipedia_url)
+    SELECT DISTINCT ON (team_unique_name) team_unique_name, team_name, team_url
     FROM rosters_rel
     """
     )
     conn.execute(
         """
     INSERT INTO rosters (
-        player_full_id, team_id, game_version, player_id, name, liquipedia_url,
+        player_unique_id, team_id, game_version, player_id, name, liquipedia_url,
         is_captain, position, flag_name, join_date, inactive_date, leave_date,
         join_date_raw, inactive_date_raw, leave_date_raw
     )
-    SELECT player_full_id, team_full_name, game_version, player_id, full_name,
+    SELECT player_unique_id, team_unique_name, game_version, player_id, full_name,
         player_url, is_captain, position, flag_name, join_date, inactive_date,
         leave_date, join_date_raw, inactive_date_raw, leave_date_raw
     FROM rosters_rel

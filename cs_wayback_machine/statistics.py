@@ -16,7 +16,7 @@ class StatisticsCalculator:
         query = """
         WITH active_periods AS (
             SELECT
-                player_full_id,
+                player_unique_id,
                 team_id,
                 join_date,
                 COALESCE(inactive_date, leave_date, CURRENT_DATE) AS end_date
@@ -30,18 +30,18 @@ class StatisticsCalculator:
         ),
         merged_periods AS (
             SELECT
-                player_full_id,
+                player_unique_id,
                 team_id,
                 join_date,
                 end_date,
                 LAG(end_date) OVER(
-                    PARTITION BY player_full_id, team_id ORDER BY join_date
+                    PARTITION BY player_unique_id, team_id ORDER BY join_date
                 ) AS prev_end_date
             FROM active_periods
         ),
         final_periods AS (
             SELECT
-                player_full_id,
+                player_unique_id,
                 team_id,
                 join_date,
                 end_date,
@@ -53,11 +53,11 @@ class StatisticsCalculator:
             FROM merged_periods
         )
         SELECT
-            player_full_id,
+            player_unique_id,
             team_id,
             SUM(period_days) AS total_days
         FROM final_periods
-        GROUP BY player_full_id, team_id
+        GROUP BY player_unique_id, team_id
         ORDER BY total_days DESC
         LIMIT $limit;
         """
@@ -67,11 +67,11 @@ class StatisticsCalculator:
     def players_with_most_teams(self, *, limit: int) -> list[tuple[str, int]]:
         query = """
         SELECT
-            player_full_id,
+            player_unique_id,
             COUNT(DISTINCT team_id) AS total_teams
         FROM rosters
         WHERE join_date IS NOT NULL
-        GROUP BY player_full_id
+        GROUP BY player_unique_id
         ORDER BY total_teams DESC
         LIMIT $limit;
         """
@@ -82,7 +82,7 @@ class StatisticsCalculator:
         query = """
         SELECT
             flag_name,
-            COUNT(DISTINCT player_full_id) AS total_players
+            COUNT(DISTINCT player_unique_id) AS total_players
         FROM rosters
         WHERE join_date IS NOT NULL AND leave_date IS NULL
             AND (join_date_raw IS NULL OR join_date_raw = '')
@@ -99,7 +99,7 @@ class StatisticsCalculator:
         query = """
         SELECT
             team_id,
-            COUNT(DISTINCT player_full_id) AS total_players
+            COUNT(DISTINCT player_unique_id) AS total_players
         FROM rosters
         WHERE join_date IS NOT NULL
         GROUP BY team_id
@@ -113,12 +113,12 @@ class StatisticsCalculator:
         query = """
         WITH teammate_counts AS (
             SELECT
-                player.player_full_id AS player_id,
-                COUNT(DISTINCT tm.player_full_id) AS teammate_count
+                player.player_unique_id AS player_id,
+                COUNT(DISTINCT tm.player_unique_id) AS teammate_count
             FROM rosters AS player
             JOIN rosters AS tm
                 ON player.team_id = tm.team_id
-                AND player.player_full_id <> tm.player_full_id
+                AND player.player_unique_id <> tm.player_unique_id
                 AND GREATEST(tm.join_date, player.join_date) < LEAST(
                         COALESCE(tm.inactive_date, CURRENT_DATE),
                         COALESCE(player.inactive_date, CURRENT_DATE),
@@ -133,7 +133,7 @@ class StatisticsCalculator:
                 AND (tm.join_date_raw IS NULL OR tm.join_date_raw = '')
                 AND (tm.leave_date_raw IS NULL OR tm.leave_date_raw = '')
                 AND (tm.inactive_date_raw IS NULL OR tm.inactive_date_raw = '')
-            GROUP BY player.player_full_id
+            GROUP BY player.player_unique_id
         )
         SELECT player_id, teammate_count
         FROM teammate_counts
@@ -149,8 +149,8 @@ class StatisticsCalculator:
         query = """
         WITH teammate_pairs AS (
             SELECT
-                LEAST(player.player_full_id, tm.player_full_id) AS player1,
-                GREATEST(player.player_full_id, tm.player_full_id) AS player2,
+                LEAST(player.player_unique_id, tm.player_unique_id) AS player1,
+                GREATEST(player.player_unique_id, tm.player_unique_id) AS player2,
                 GREATEST(player.join_date, tm.join_date) AS overlap_start,
                 LEAST(
                     COALESCE(tm.inactive_date, CURRENT_DATE),
@@ -161,7 +161,7 @@ class StatisticsCalculator:
             FROM rosters AS player
             JOIN rosters AS tm
                 ON player.team_id = tm.team_id
-                AND player.player_full_id <> tm.player_full_id
+                AND player.player_unique_id <> tm.player_unique_id
                 AND GREATEST(player.join_date, tm.join_date) <= LEAST(
                     COALESCE(tm.inactive_date, CURRENT_DATE),
                     COALESCE(player.inactive_date, CURRENT_DATE),

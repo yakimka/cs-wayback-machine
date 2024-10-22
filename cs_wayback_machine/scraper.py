@@ -66,10 +66,10 @@ class TeamsSpider(scrapy.Spider):
                 player_id = row.css("td.ID a::text").get().strip()
                 player_slug = self._extract_name_from_url(player_url) or ""
                 yield {
-                    "team_full_name": self._clean_text(team_slug or ""),
+                    "team_unique_name": self._clean_text(team_slug or ""),
                     "team_name": team_name,
                     "team_url": response.url,
-                    "player_full_id": self._clean_text(player_slug or player_id),
+                    "player_unique_id": self._clean_text(player_slug or player_id),
                     "game_version": game_version,
                     "player_id": player_id,
                     "full_name": full_name or None,

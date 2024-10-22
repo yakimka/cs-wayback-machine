@@ -34,9 +34,9 @@ class RosterStorage:
 
     def get_team(self, team_id: str) -> Team | None:
         query = """
-        SELECT name, full_name, liquipedia_url
+        SELECT name, unique_name, liquipedia_url
         FROM teams
-        WHERE full_name = $team_id;
+        WHERE unique_name = $team_id;
         """
         statement = self._manager.conn.execute(query, parameters={"team_id": team_id})
         row = statement.fetchone()
@@ -48,8 +48,8 @@ class RosterStorage:
         self, team_id: str, date_from: date, date_to: date
     ) -> list[RosterPlayer]:
         query = """
-        SELECT player_full_id, team_id, game_version, player_id, name, liquipedia_url,
-            is_captain, position, flag_name, flag_url, join_date, inactive_date,
+        SELECT player_unique_id, team_id, game_version, player_id, name, liquipedia_url,
+            is_captain, position, flag_name, join_date, inactive_date,
             leave_date, join_date_raw, inactive_date_raw, leave_date_raw
         FROM rosters
         WHERE team_id = $team_id
@@ -73,11 +73,11 @@ class RosterStorage:
 
     def get_player(self, player_id: str) -> list[RosterPlayer]:
         query = """
-        SELECT player_full_id, team_id, game_version, player_id, name, liquipedia_url,
-            is_captain, position, flag_name, flag_url, join_date, inactive_date,
+        SELECT player_unique_id, team_id, game_version, player_id, name, liquipedia_url,
+            is_captain, position, flag_name, join_date, inactive_date,
             leave_date, join_date_raw, inactive_date_raw, leave_date_raw
         FROM rosters
-        WHERE player_full_id = $player_id;
+        WHERE player_unique_id = $player_id;
         """
         statement = self._manager.conn.execute(
             query, parameters={"player_id": player_id}
@@ -91,7 +91,7 @@ class RosterStorage:
         query = """
         WITH teammate_periods AS (
             SELECT
-                tm.player_full_id,
+                tm.player_unique_id,
                 tm.team_id,
                 tm.game_version,
                 tm.player_id,
@@ -100,7 +100,6 @@ class RosterStorage:
                 tm.is_captain,
                 tm.position,
                 tm.flag_name,
-                tm.flag_url,
                 tm.join_date,
                 tm.inactive_date,
                 tm.leave_date,
@@ -117,14 +116,14 @@ class RosterStorage:
             FROM rosters AS player
             JOIN rosters AS tm
                 ON player.team_id = tm.team_id
-                AND player.player_full_id <> tm.player_full_id
+                AND player.player_unique_id <> tm.player_unique_id
                 AND GREATEST(tm.join_date, player.join_date) < LEAST(
                     COALESCE(tm.inactive_date, CURRENT_DATE),
                     COALESCE(player.inactive_date, CURRENT_DATE),
                     COALESCE(tm.leave_date, CURRENT_DATE),
                     COALESCE(player.leave_date, CURRENT_DATE)
                 )
-            WHERE player.player_full_id = $player_id
+            WHERE player.player_unique_id = $player_id
                 AND player.join_date IS NOT NULL
                 AND (player.join_date_raw IS NULL OR player.join_date_raw = '')
                 AND (player.leave_date_raw IS NULL OR player.leave_date_raw = '')
@@ -136,7 +135,7 @@ class RosterStorage:
         ),
         merged_periods AS (
             SELECT
-                player_full_id,
+                player_unique_id,
                 team_id,
                 game_version,
                 player_id,
@@ -145,7 +144,6 @@ class RosterStorage:
                 is_captain,
                 position,
                 flag_name,
-                flag_url,
                 join_date,
                 inactive_date,
                 leave_date,
@@ -155,12 +153,14 @@ class RosterStorage:
                 overlap_start,
                 overlap_end,
                 LAG(overlap_end) OVER
-                (PARTITION BY player_full_id ORDER BY overlap_start) AS prev_overlap_end
+                (
+                    PARTITION BY player_unique_id ORDER BY overlap_start
+                ) AS prev_overlap_end
             FROM teammate_periods
         ),
         final_periods AS (
             SELECT
-                player_full_id,
+                player_unique_id,
                 team_id,
                 game_version,
                 player_id,
@@ -169,7 +169,6 @@ class RosterStorage:
                 is_captain,
                 position,
                 flag_name,
-                flag_url,
                 join_date,
                 inactive_date,
                 leave_date,
@@ -191,7 +190,7 @@ class RosterStorage:
             FROM merged_periods
         )
         SELECT
-            player_full_id,
+            player_unique_id,
             team_id,
             game_version,
             player_id,
@@ -200,7 +199,6 @@ class RosterStorage:
             is_captain,
             position,
             flag_name,
-            flag_url,
             join_date,
             inactive_date,
             leave_date,
@@ -210,10 +208,10 @@ class RosterStorage:
             merged_start AS overlap_start,
             merged_end AS overlap_end
         FROM final_periods
-        GROUP BY player_full_id, team_id, game_version, player_id, name, liquipedia_url,
-            is_captain, position, flag_name, flag_url, join_date, inactive_date,
-            leave_date, join_date_raw, inactive_date_raw, leave_date_raw, merged_start,
-            merged_end
+        GROUP BY player_unique_id, team_id, game_version, player_id, name,
+            liquipedia_url, is_captain, position, flag_name, join_date,
+            inactive_date, leave_date, join_date_raw, inactive_date_raw, leave_date_raw,
+            merged_start, merged_end
         ORDER BY merged_start;
         """
         statement = self._manager.conn.execute(
@@ -227,7 +225,7 @@ class RosterStorage:
 
     def get_team_names(self) -> list[str]:
         query = """
-        SELECT full_name
+        SELECT unique_name
         FROM teams;
         """
         statement = self._manager.conn.execute(query)
@@ -235,7 +233,7 @@ class RosterStorage:
 
     def get_player_names(self) -> list[str]:
         query = """
-        SELECT DISTINCT player_full_id
+        SELECT DISTINCT player_unique_id
         FROM rosters;
         """
         statement = self._manager.conn.execute(query)
