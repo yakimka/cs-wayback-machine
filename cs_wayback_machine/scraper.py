@@ -83,11 +83,16 @@ class TeamsSpider(scrapy.Spider):
                     "flag_name": self._extract_text(
                         row.css("td.ID .flag img::attr(title)"), nullable=True
                     ),
+                    "join_date": extracted_dates.get("join_date"),
+                    "inactive_date": extracted_dates.get("inactive_date"),
+                    "leave_date": extracted_dates.get("leave_date"),
+                    "join_date_raw": extracted_dates.get("join_date_raw"),
+                    "inactive_date_raw": extracted_dates.get("inactive_date_raw"),
+                    "leave_date_raw": extracted_dates.get("leave_date_raw"),
                     "has_invalid_dates": (
                         not extracted_dates
                         or any(key.endswith("_raw") for key in extracted_dates)
                     ),
-                    **extracted_dates,
                 }
 
     def _extract_text(self, node: Any, *, nullable: bool = False) -> str | None:
