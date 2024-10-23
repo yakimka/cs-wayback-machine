@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from typing import TYPE_CHECKING
 
 from cs_wayback_machine.date_util import DateRange, days_human_readable
@@ -44,31 +44,47 @@ class RosterDTO:
 class TeamRostersDTO:
     team_name: str
     liquipedia_url: str
+    reset_filters_url: str | None
     rosters: list[RosterDTO]
 
 
 class TeamRostersPresenter:
     def __init__(self, *, rosters_storage: RosterStorage):
-        self._skip_if_period_less_than = 7
+        self._skip_if_period_less_than = 3
         self._rosters_storage = rosters_storage
 
-    def present(self, team_id: str) -> TeamRostersDTO | None:
+    def present(
+        self, team_id: str, date_from: date | None = None, date_to: date | None = None
+    ) -> TeamRostersDTO | None:
+        has_filters = date_from or date_to
+        if date_from is None:
+            date_from = date(2000, 11, 9)
+        if date_to is None:
+            date_to = date.today() + timedelta(days=1)
+
         team = self._rosters_storage.get_team(team_id)
         if team is None:
             return None
         players = self._rosters_storage.get_players(
             team_id=team_id,
-            date_from=date(2000, 11, 9),
-            date_to=date(2025, 12, 31),
+            date_from=date_from,
+            date_to=date_to,
         )
         if not players:
             return None
-        rosters = self._prepare_rosters(create_rosters(players))
+        rosters = self._prepare_rosters(
+            create_rosters(players), date_from=date_from, date_to=date_to
+        )
         return TeamRostersDTO(
-            team_name=team.name, liquipedia_url=team.liquipedia_url, rosters=rosters
+            team_name=team.name,
+            liquipedia_url=team.liquipedia_url,
+            reset_filters_url=team_link(team_id) if has_filters else None,
+            rosters=rosters,
         )
 
-    def _prepare_rosters(self, rosters: list[Roster]) -> list[RosterDTO]:
+    def _prepare_rosters(
+        self, rosters: list[Roster], date_from: date, date_to: date
+    ) -> list[RosterDTO]:
         result = []
         for roster in rosters:
             if not roster.players:
@@ -109,6 +125,10 @@ class TeamRostersPresenter:
 
             period_start = roster.active_period.start
             period_end = roster.active_period.end
+
+            if date_from >= period_end or date_to < period_start:
+                continue
+
             if (period_end - period_start).days < self._skip_if_period_less_than:
                 continue
             result.append(
@@ -423,3 +443,11 @@ def present_global_data(rosters_storage: RosterStorage) -> GlobalDataDTO:
     return GlobalDataDTO(
         db_last_updated_date=updated_date.isoformat() if updated_date else None
     )
+
+
+def player_link(player_id: str) -> str:
+    return f"/players/{slugify(player_id)}/"
+
+
+def team_link(team_id: str) -> str:
+    return f"/teams/{slugify(team_id)}/"

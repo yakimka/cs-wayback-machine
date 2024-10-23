@@ -51,6 +51,8 @@ def create_new_connection_from_parser_results(
             join_date DATE,
             inactive_date DATE,
             leave_date DATE,
+            inactive_or_leave_date DATE,
+            has_invalid_dates BOOLEAN NOT NULL,
             join_date_raw TEXT,
             inactive_date_raw TEXT,
             leave_date_raw TEXT
@@ -73,11 +75,13 @@ def create_new_connection_from_parser_results(
     INSERT INTO rosters (
         player_unique_id, team_id, game_version, player_id, name, liquipedia_url,
         is_captain, position, flag_name, join_date, inactive_date, leave_date,
-        join_date_raw, inactive_date_raw, leave_date_raw
+        inactive_or_leave_date, has_invalid_dates, join_date_raw, inactive_date_raw,
+        leave_date_raw
     )
     SELECT player_unique_id, team_unique_name, game_version, player_id, full_name,
         player_url, is_captain, position, flag_name, join_date, inactive_date,
-        leave_date, join_date_raw, inactive_date_raw, leave_date_raw
+        leave_date, COALESCE(inactive_date, leave_date) as inactive_or_leave_date,
+        has_invalid_dates, join_date_raw, inactive_date_raw, leave_date_raw
     FROM rosters_rel
     """
     )

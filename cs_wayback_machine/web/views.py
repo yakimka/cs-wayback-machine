@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import TYPE_CHECKING
 
 from picodi import Provide, inject
@@ -65,12 +66,22 @@ def team_detail_view(
     request: Request, rosters_storage: RosterStorage = Provide(get_rosters_storage)
 ) -> Response:
     team_id = slugify.reverse(request.path_params["team_id"])
+    date_from = _parse_date(request.query_params.get("from", ""))
+    date_to = _parse_date(request.query_params.get("to", ""))
+
     presenter = TeamRostersPresenter(rosters_storage=rosters_storage)
-    result = presenter.present(team_id)
+    result = presenter.present(team_id, date_from, date_to)
     if result is None:
         return HTMLResponse(content=render_404(), status_code=404)
     html = render_html("team_detail.jinja2", result)
     return HTMLResponse(html)
+
+
+def _parse_date(value: str) -> date | None:
+    try:
+        return date.fromisoformat(value)
+    except (ValueError, TypeError):
+        return None
 
 
 @inject

@@ -53,9 +53,8 @@ class RosterStorage:
             leave_date, join_date_raw, inactive_date_raw, leave_date_raw
         FROM rosters
         WHERE team_id = $team_id
-        AND join_date <= $end_date
-        AND (leave_date >= $start_date OR leave_date IS NULL)
-        AND (inactive_date >= $start_date OR inactive_date IS NULL);
+        AND (join_date is NULL OR join_date <= $end_date)
+        AND (inactive_or_leave_date is NULL OR inactive_or_leave_date >= $start_date);
         """
 
         statement = self._manager.conn.execute(

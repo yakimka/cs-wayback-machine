@@ -7,6 +7,11 @@
                                              href="{{ data.liquipedia_url }}">liquipedia</a></sup>
             </h1>
         </div>
+        <div role="group">
+            {% if data.reset_filters_url %}
+                <a href="{{ data.reset_filters_url }}">Reset filters</a>
+            {% endif %}
+        </div>
         <div class="grid-4x">
             {% for roster in data.rosters %}
                 <article>
