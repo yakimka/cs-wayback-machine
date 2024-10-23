@@ -68,9 +68,10 @@ def team_detail_view(
     team_id = slugify.reverse(request.path_params["team_id"])
     date_from = _parse_date(request.query_params.get("from", ""))
     date_to = _parse_date(request.query_params.get("to", ""))
+    highlight = request.query_params.get("hl", "").strip()
 
     presenter = TeamRostersPresenter(rosters_storage=rosters_storage)
-    result = presenter.present(team_id, date_from, date_to)
+    result = presenter.present(team_id, date_from, date_to, highlight=highlight)
     if result is None:
         return HTMLResponse(content=render_404(), status_code=404)
     html = render_html("team_detail.jinja2", result)

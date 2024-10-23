@@ -106,9 +106,9 @@ class TeamsSpider(scrapy.Spider):
         dates_parsed: dict[str, str | None] = {}
         for date_el in dates:
             date_type_raw = date_el.css(".MobileStuffDate::text").get()
-            date_value_raw = date_el.css("i::text").get("")
+            date_value_raw = date_el.css("i::text").get("").strip()
             if not date_value_raw:
-                date_value_raw = date_el.css("i abbr::text").get("")
+                date_value_raw = date_el.css("i abbr::text").get("").strip()
 
             date_parser = DateParser(date_type_raw, date_value_raw)
             date_type, date_val, date_raw = date_parser.parse()
