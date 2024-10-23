@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from typing import TYPE_CHECKING
 
 from cs_wayback_machine.date_util import DateRange, days_human_readable
@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 class PlayerDTO:
     player_id: str
     nickname: str
+    highlight: bool
     name: str
     is_captain: bool
     is_coach: bool
@@ -44,31 +45,54 @@ class RosterDTO:
 class TeamRostersDTO:
     team_name: str
     liquipedia_url: str
+    reset_filters_url: str | None
     rosters: list[RosterDTO]
 
 
 class TeamRostersPresenter:
     def __init__(self, *, rosters_storage: RosterStorage):
-        self._skip_if_period_less_than = 7
+        self._skip_if_period_less_than = 3
         self._rosters_storage = rosters_storage
 
-    def present(self, team_id: str) -> TeamRostersDTO | None:
+    def present(
+        self,
+        team_id: str,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        highlight: str = "",
+    ) -> TeamRostersDTO | None:
+        has_filters = date_from or date_to
+        if date_from is None:
+            date_from = date(2000, 11, 9)
+        if date_to is None:
+            date_to = date.today() + timedelta(days=1)
+
         team = self._rosters_storage.get_team(team_id)
         if team is None:
             return None
         players = self._rosters_storage.get_players(
             team_id=team_id,
-            date_from=date(2000, 11, 9),
-            date_to=date(2025, 12, 31),
+            date_from=date_from,
+            date_to=date_to,
         )
         if not players:
             return None
-        rosters = self._prepare_rosters(create_rosters(players))
+        rosters = self._prepare_rosters(
+            create_rosters(players),
+            date_from=date_from,
+            date_to=date_to,
+            highlight=highlight,
+        )
         return TeamRostersDTO(
-            team_name=team.name, liquipedia_url=team.liquipedia_url, rosters=rosters
+            team_name=team.name,
+            liquipedia_url=team.liquipedia_url,
+            reset_filters_url=team_link(team_id) if has_filters else None,
+            rosters=rosters,
         )
 
-    def _prepare_rosters(self, rosters: list[Roster]) -> list[RosterDTO]:
+    def _prepare_rosters(
+        self, rosters: list[Roster], date_from: date, date_to: date, highlight: str
+    ) -> list[RosterDTO]:
         result = []
         for roster in rosters:
             if not roster.players:
@@ -82,6 +106,7 @@ class TeamRostersPresenter:
                     PlayerDTO(
                         player_id=player.player_id,
                         nickname=player.nickname,
+                        highlight=player.nickname == highlight,
                         name=player.name,
                         is_captain=player.is_captain,
                         is_coach="Coach" in position,
@@ -109,6 +134,10 @@ class TeamRostersPresenter:
 
             period_start = roster.active_period.start
             period_end = roster.active_period.end
+
+            if date_from >= period_end or date_to <= period_start:
+                continue
+
             if (period_end - period_start).days < self._skip_if_period_less_than:
                 continue
             result.append(
@@ -310,6 +339,7 @@ class MainPagePresenter:
 @dataclass
 class PlayerTeamDTO:
     team_id: str
+    url_with_filters: str
     position: str
     join_date: str
     inactive_date: str
@@ -362,8 +392,13 @@ class PlayerPagePresenter:
         teams = []
         player.sort(key=lambda x: x.active_period.start)
         for item in player:
+            join_date = item.join_date
+            stop_date = item.inactive_date or item.leave_date
             team = PlayerTeamDTO(
                 team_id=item.team_id,
+                url_with_filters=team_link(
+                    item.team_id, join_date, stop_date, highlight=item.nickname
+                ),
                 position=_format_player_position(item),
                 join_date=_format_date(item.join_date),
                 inactive_date=_format_date(item.inactive_date),
@@ -423,3 +458,24 @@ def present_global_data(rosters_storage: RosterStorage) -> GlobalDataDTO:
     return GlobalDataDTO(
         db_last_updated_date=updated_date.isoformat() if updated_date else None
     )
+
+
+def player_link(player_id: str) -> str:
+    return f"/players/{slugify(player_id)}/"
+
+
+def team_link(
+    team_id: str,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    highlight: str = "",
+) -> str:
+    params = []
+    if date_from:
+        params.append(f"from={date_from.isoformat()}")
+    if date_to:
+        params.append(f"to={date_to.isoformat()}")
+    if highlight:
+        params.append(f"hl={highlight}")
+    url = f"/teams/{slugify(team_id)}/"
+    return f"{url}?{'&'.join(params)}" if params else url

@@ -73,7 +73,7 @@
                         <p><small>Leave
                             Date: {{ player_date(team.leave_date, team.leave_date_raw) }}</small>
                         </p>
-                        <p><a class="contrast" href="{{ team_link(team.team_id) }}">Go to Team
+                        <p><a class="contrast" href="{{ team.url_with_filters }}">Go to Team
                             Page</a></p>
                     </article>
                 {% endfor %}
