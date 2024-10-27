@@ -20,6 +20,7 @@ settings = Dynaconf(
 class Settings:
     email_for_scrapper_useragent: str
     parser_results_path: Path
+    sentry_dsn: str | None
 
     @property
     def parser_result_file_path(self) -> Path:
@@ -39,4 +40,5 @@ class Settings:
         return cls(
             email_for_scrapper_useragent=settings.email_for_scrapper_useragent,
             parser_results_path=Path(parser_results_path),
+            sentry_dsn=settings.get("sentry_dsn"),
         )
