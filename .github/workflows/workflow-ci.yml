@@ -81,6 +81,9 @@ jobs:
           )
           docker tag ${DEV_IMAGE} ${PROJECT_NAME}:dev
 
+      - name: Prepare configs
+        run: cp cs_wayback_machine/settings.example.yaml cs_wayback_machine/settings.yaml
+
       - name: Run checks
         run: docker compose run -e CI=1 --user=$(id -u) --rm devtools ./ci.sh
 
