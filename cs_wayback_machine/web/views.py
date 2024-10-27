@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from picodi import Provide, inject
 from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
-from cs_wayback_machine.web.deps import get_rosters_storage, get_statistics_calculator
+from cs_wayback_machine.deps import get_rosters_storage, get_statistics_calculator
 from cs_wayback_machine.web.html_render import render_404, render_html
 from cs_wayback_machine.web.presenters import (
     MainPagePresenter,

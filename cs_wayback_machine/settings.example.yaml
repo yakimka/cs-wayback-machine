@@ -4,3 +4,4 @@ default:
 
 testing:
   email_for_scrapper_useragent: "me@example.com"
+  parser_results_path: "../parser_results"
