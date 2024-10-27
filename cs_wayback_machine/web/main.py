@@ -30,7 +30,7 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None]:  # noqa: U100
 
 middleware = [
     Middleware(ClosingSlashMiddleware),
-    Middleware(PrometheusMiddleware),
+    Middleware(PrometheusMiddleware, app_name="cs_wayback_machine_web"),
 ]
 
 exception_handlers = {
