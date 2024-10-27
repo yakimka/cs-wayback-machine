@@ -28,7 +28,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.10"
-picodi = "^0.29.0"
+picodi = "^0.30.0"
 scrapy = "^2.11.2"
 duckdb = "^1.1.2"
 starlette = "^0.41.0"
