@@ -6,7 +6,12 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 from cs_wayback_machine.cli.controllers import scrape_liquidpedia_and_replace_result
-from cs_wayback_machine.cli.core import Command, only_print_result, render_result
+from cs_wayback_machine.cli.core import (
+    Command,
+    only_print_result,
+    render_result,
+    setup_monitoring,
+)
 
 if TYPE_CHECKING:
     import argparse
@@ -35,6 +40,7 @@ class UpdateDatabaseCommand(Command):
         self.schedule_job(args.schedule)
 
     def schedule_job(self, schedule: tuple[int, int, int]) -> None:
+        setup_monitoring()
         scheduler = sched.scheduler(time.time, time.sleep)
 
         def job(just_schedule: bool = False) -> None:

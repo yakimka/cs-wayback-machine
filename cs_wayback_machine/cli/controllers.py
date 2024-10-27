@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 
 from picodi import Provide, inject
 
+from cs_wayback_machine.deps import get_settings
 from cs_wayback_machine.scraper import TeamsSpider, create_crawler_process
-from cs_wayback_machine.web.deps import get_settings
 
 if TYPE_CHECKING:
     from cs_wayback_machine.settings import Settings

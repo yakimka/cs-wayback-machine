@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from cs_wayback_machine.web.deps import (
+from cs_wayback_machine.deps import (
     get_parser_result_file_path,
     get_parser_result_updated_date_file_path,
 )

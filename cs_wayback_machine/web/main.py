@@ -10,7 +10,7 @@ from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette_exporter import PrometheusMiddleware
 
-from cs_wayback_machine.web.deps import get_settings
+from cs_wayback_machine.deps import get_settings
 from cs_wayback_machine.web.middleware import ClosingSlashMiddleware
 from cs_wayback_machine.web.routes import routes
 from cs_wayback_machine.web.views import not_found_view, server_error_view
