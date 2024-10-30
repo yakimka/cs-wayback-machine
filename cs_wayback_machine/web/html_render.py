@@ -42,7 +42,7 @@ jinja_env.globals.update(
 def render_html(
     template_name: str,
     data: Any = None,
-    global_data: GlobalDataDTO = Provide(get_global_data),
+    global_data: GlobalDataDTO | None = Provide(get_global_data),
 ) -> str:
     return jinja_env.get_template(template_name).render(
         data=data, global_data=global_data

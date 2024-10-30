@@ -108,5 +108,5 @@ async def not_found_view(
 async def server_error_view(
     request: Request, exc: Exception  # noqa: U100
 ) -> HTMLResponse:
-    html = render_html("500_server_error.jinja2")
+    html = render_html("500_server_error.jinja2", global_data=None)
     return HTMLResponse(content=html, status_code=500)

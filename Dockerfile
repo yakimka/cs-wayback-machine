@@ -30,6 +30,7 @@ FROM python:3.12.7-slim-bullseye as production
 RUN useradd -M appuser --uid=1000 --shell=/bin/false
 USER appuser
 
+ENV WEB_CONCURRENCY=1
 ENV VIRTUAL_ENV=/venv
 ENV PATH="/venv/bin:$PATH"
 WORKDIR /opt/app
