@@ -247,26 +247,27 @@ class DuckDbConnectionManager:
     @property
     def conn(self) -> duckdb.DuckDBPyConnection:
         if self._conn is None:
+            logger.info("Creating new connection")
             self._conn = create_new_connection_from_parser_results(
                 self._parser_results_storage
             )
-        current_version = self.version()
+        conn = self._conn.cursor()
+        current_version = self.version(conn)
         new_version = self._parser_results_storage.version()
         if new_version and (current_version is None or new_version > current_version):
             logger.info("New version of parser results detected, updating database")
-            self._conn.close()
-            self._conn = create_new_connection_from_parser_results(
+            conn.close()
+            self._conn = conn = create_new_connection_from_parser_results(
                 self._parser_results_storage
             )
-        return self._conn
+        return conn
 
-    def version(self) -> date | None:
-        assert self._conn is not None
+    def version(self, conn: duckdb.DuckDBPyConnection) -> date | None:
         query = """
         SELECT rosters_updated_date
         FROM meta;
         """
-        statement = self._conn.execute(query)
+        statement = conn.execute(query)
         row = statement.fetchone()
         return row[0] if row else None
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import logging
 from typing import TYPE_CHECKING
 
 import picodi
@@ -17,6 +18,9 @@ from cs_wayback_machine.web.views import not_found_view, server_error_view
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
+
+
+logging.basicConfig(level=logging.INFO)
 
 
 @contextlib.asynccontextmanager

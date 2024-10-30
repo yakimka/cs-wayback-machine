@@ -51,7 +51,10 @@ def get_parser_results_storage(
 def get_duckdb_connection_manager(
     parser_results_storage: ParserResultsStorage = Provide(get_parser_results_storage),
 ) -> DuckDbConnectionManager:
-    return DuckDbConnectionManager(parser_results_storage)
+    manager = DuckDbConnectionManager(parser_results_storage)
+    # load data
+    manager.conn
+    return manager
 
 
 @inject
