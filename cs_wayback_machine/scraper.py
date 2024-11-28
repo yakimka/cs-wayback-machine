@@ -30,11 +30,21 @@ class TeamsSpider(scrapy.Spider):
         if next_page is not None:
             yield response.follow(next_page, callback=self.parse)
 
-    def parse_teams(self, response: Response) -> Generator:
+    def parse_teams(self, response: Response) -> Generator:  # noqa: C901
         team_name = response.css("#firstHeading span::text").get()
         roster_section = response.css("#Player_Roster").xpath(
-            "../following-sibling::div"
+            "../following-sibling::*[self::div or self::h2]"
         )
+        tmp_roster_sections = []
+        for item in roster_section:
+            if item.css("#Organization"):
+                break
+            if item.root.tag == "div":
+                tmp_roster_sections.append(item)
+        if not tmp_roster_sections:
+            return
+        roster_section[:] = tmp_roster_sections
+
         tab_names = self._extract_cs_names(roster_section)
         roster_cards = roster_section.css(".roster-card")
         for item in roster_cards:
