@@ -36,7 +36,7 @@ uvicorn = "^0.32.0"
 jinja2 = "^3.1.4"
 dynaconf = "^3.2.6"
 starlette-exporter = "^0.23.0"
-sentry-sdk = {extras = ["starlette"], version = "^2.17.0"}
+sentry-sdk = {extras = ["starlette"], version = "^2.19.1"}
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.13.0"
