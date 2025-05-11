@@ -58,7 +58,6 @@ jobs:
 
       - name: Prepare Docker
         run: |
-          cp .env.template .env
           docker login "$CACHE_REGISTRY" -u "$CACHE_REGISTRY_USERNAME" --password="${CACHE_REGISTRY_TOKEN}"
           docker buildx create --use --driver=docker-container
           docker --version && docker compose --version
@@ -119,7 +118,6 @@ jobs:
 
       - name: Prepare Docker
         run: |
-          cp .env.template .env
           docker login "$REGISTRY" -u "$REGISTRY_USERNAME" --password="${REGISTRY_TOKEN}"
           docker buildx create --use --driver=docker-container
           docker --version && docker compose --version
