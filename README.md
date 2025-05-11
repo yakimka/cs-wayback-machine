@@ -62,7 +62,6 @@ Docker images (amd64 and arm64) are available on [Docker Hub](https://hub.docker
    make poetry args="<poetry-args>"
    ```
    - For example: `make poetry args="add requests"`
-   - Rebuild the Docker image after modifying dependencies.
 
 5. For local CI debugging:
    ```bash
