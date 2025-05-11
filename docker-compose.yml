@@ -6,7 +6,6 @@ x-common: &common
     context: .
     dockerfile: Dockerfile-dev
   image: "cs-wayback-machine:dev"
-#  env_file: .env
   volumes:
     - .:/opt/code
 
