@@ -3,6 +3,8 @@
 [![Build Status](https://github.com/yakimka/cs-wayback-machine/actions/workflows/workflow-ci.yml/badge.svg?branch=main&event=push)](https://github.com/yakimka/cs-wayback-machine/actions/workflows/workflow-ci.yml)
 [![Codecov](https://codecov.io/gh/yakimka/cs-wayback-machine/branch/main/graph/badge.svg)](https://codecov.io/gh/yakimka/cs-wayback-machine)
 
+[Demo site](https://cs-wayback-machine.yakimka.me/)
+
 A Service for Viewing Historical Data on Counter-Strike Players and Teams
 
 This service allows you to explore team rosters during different time periods,
