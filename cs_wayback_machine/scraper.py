@@ -247,7 +247,7 @@ def create_crawler_process(*, result_path: str | Path, email: str) -> CrawlerPro
             "ROBOTSTXT_OBEY": False,
             "CLOSESPIDER_ERRORCOUNT": 1,
             "DOWNLOAD_DELAY": 1,
-            "CONCURRENT_REQUESTS_PER_DOMAIN": 2,
+            "CONCURRENT_REQUESTS_PER_DOMAIN": 1,
             "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
             "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
             "FEED_EXPORT_ENCODING": "utf-8",

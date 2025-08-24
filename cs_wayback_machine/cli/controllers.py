@@ -40,8 +40,17 @@ def scrape_liquidpedia_and_replace_result(
     if errors_count:
         return Result("Error occurred during the scraping", 1)
 
+    tmp_file_size = tmp_file.stat().st_size
+    if tmp_file_size == 0:
+        return Result("Scraping resulted in empty file", 1)
+
     parser_result_file_path = settings.parser_result_file_path
     if parser_result_file_path.exists():
+        old_file_size = parser_result_file_path.stat().st_size
+        # if the tmp file is more than 10% smaller than the old file, something is wrong
+        if tmp_file_size < old_file_size * 0.9:
+            return Result("New file is significantly smaller than the old one", 1)
+
         shutil.move(parser_result_file_path, f"{parser_result_file_path}.bak")
     shutil.move(tmp_file, parser_result_file_path)
     with open(settings.parser_result_updated_date_file_path, "w") as f:
