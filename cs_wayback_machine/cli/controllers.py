@@ -42,6 +42,7 @@ def scrape_liquidpedia_and_replace_result(
 
     tmp_file_size = tmp_file.stat().st_size
     if tmp_file_size == 0:
+        tmp_file.unlink(missing_ok=True)
         return Result("Scraping resulted in empty file", 1)
 
     parser_result_file_path = settings.parser_result_file_path
@@ -49,6 +50,7 @@ def scrape_liquidpedia_and_replace_result(
         old_file_size = parser_result_file_path.stat().st_size
         # if the tmp file is more than 10% smaller than the old file, something is wrong
         if tmp_file_size < old_file_size * 0.9:
+            tmp_file.unlink(missing_ok=True)
             return Result("New file is significantly smaller than the old one", 1)
 
         shutil.move(parser_result_file_path, f"{parser_result_file_path}.bak")
