@@ -40,6 +40,9 @@ def scrape_liquidpedia_and_replace_result(
     if errors_count:
         return Result("Error occurred during the scraping", 1)
 
+    if tmp_file.stat().st_size == 0:
+        return Result("Scraping resulted in empty file", 1)
+
     parser_result_file_path = settings.parser_result_file_path
     if parser_result_file_path.exists():
         shutil.move(parser_result_file_path, f"{parser_result_file_path}.bak")
