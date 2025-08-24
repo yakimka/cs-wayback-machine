@@ -243,7 +243,7 @@ def create_crawler_process(*, result_path: str | Path, email: str) -> CrawlerPro
                 str(result_path): {"format": "jsonlines"},
             },
             "BOT_NAME": "teamsscrapper",
-            "USER_AGENT": f"CsWaybackMachineBot/0.1.0 ({email})",
+            "USER_AGENT": f"cs-wayback-machine/1.0.0 ({email})",
             "ROBOTSTXT_OBEY": False,
             "CLOSESPIDER_ERRORCOUNT": 1,
             "DOWNLOAD_DELAY": 1,
